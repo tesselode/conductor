@@ -124,6 +124,7 @@ mod static_container;
 mod tempo;
 mod util;
 mod value;
+mod vec_map;
 
 pub use command::producer::CommandError;
 pub use duration::Duration;
