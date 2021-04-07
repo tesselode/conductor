@@ -49,6 +49,25 @@ fn instances_benchmark(c: &mut Criterion) {
 		drop(backend);
 		drop(audio_manager);
 	});
+
+	benchmark_group.bench_function("many sounds", |b| {
+		const NUM_SOUNDS: usize = 100_000;
+		let (mut audio_manager, mut backend) =
+			AudioManager::new_without_audio_thread(AudioManagerSettings {
+				num_sounds: NUM_SOUNDS,
+				num_instances: NUM_SOUNDS,
+				num_commands: NUM_SOUNDS * 2,
+				..Default::default()
+			});
+		for _ in 0..NUM_SOUNDS {
+			let mut sound_handle = audio_manager.add_sound(create_test_sound(1)).unwrap();
+			sound_handle.play(Default::default()).unwrap();
+		}
+		backend.process();
+		b.iter(|| backend.process());
+		drop(backend);
+		drop(audio_manager);
+	});
 }
 
 criterion_group!(benches, instances_benchmark);
