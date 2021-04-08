@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::{
 	iter::Map,
 	slice::{Iter, IterMut},
@@ -39,10 +42,10 @@ impl<K: Eq, V> VecMap<K, V> {
 	}
 
 	pub fn insert(&mut self, key: K, value: V) -> Result<Option<V>, V> {
+		let previous_item = self.remove(&key);
 		if self.len() >= self.capacity() {
 			return Err(value);
 		}
-		let previous_item = self.remove(&key);
 		self.vec.push((key, value));
 		Ok(previous_item)
 	}
