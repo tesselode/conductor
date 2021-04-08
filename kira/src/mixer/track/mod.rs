@@ -9,10 +9,7 @@ use basedrop::Owned;
 use handle::{SendTrackHandle, SubTrackHandle};
 use uuid::Uuid;
 
-use crate::{
-	frame::Frame, parameter::Parameters, static_container::index_map::StaticIndexMap, CachedValue,
-	Value,
-};
+use crate::{frame::Frame, parameter::Parameters, vec_map::VecMap, CachedValue, Value};
 
 use super::{
 	effect::{Effect, EffectId, EffectSettings},
@@ -143,7 +140,7 @@ pub(crate) enum TrackKind {
 pub(crate) struct Track {
 	kind: TrackKind,
 	volume: CachedValue<f64>,
-	effect_slots: StaticIndexMap<EffectId, EffectSlot>,
+	effect_slots: VecMap<EffectId, EffectSlot>,
 	input: Frame,
 }
 
@@ -152,7 +149,7 @@ impl Track {
 		Self {
 			kind: TrackKind::Main,
 			volume: CachedValue::new(Value::Fixed(1.0), 1.0),
-			effect_slots: StaticIndexMap::new(MAIN_TRACK_NUM_EFFECTS),
+			effect_slots: VecMap::new(MAIN_TRACK_NUM_EFFECTS),
 			input: Frame::from_mono(0.0),
 		}
 	}
@@ -165,7 +162,7 @@ impl Track {
 				sends: settings.sends.to_map(),
 			},
 			volume: CachedValue::new(settings.volume, 1.0),
-			effect_slots: StaticIndexMap::new(settings.num_effects),
+			effect_slots: VecMap::new(settings.num_effects),
 			input: Frame::from_mono(0.0),
 		}
 	}
@@ -174,7 +171,7 @@ impl Track {
 		Self {
 			kind: TrackKind::Send { id },
 			volume: CachedValue::new(settings.volume, 1.0),
-			effect_slots: StaticIndexMap::new(settings.num_effects),
+			effect_slots: VecMap::new(settings.num_effects),
 			input: Frame::from_mono(0.0),
 		}
 	}
@@ -202,7 +199,7 @@ impl Track {
 		settings: EffectSettings,
 	) {
 		let effect_slot = EffectSlot::new(effect, settings);
-		self.effect_slots.try_insert(id, effect_slot).ok();
+		self.effect_slots.insert(id, effect_slot).ok();
 	}
 
 	pub fn effect_mut(&mut self, id: EffectId) -> Option<&mut EffectSlot> {
@@ -226,7 +223,7 @@ impl Track {
 		}
 		let mut input = self.input;
 		self.input = Frame::from_mono(0.0);
-		for (_, effect_slot) in &mut self.effect_slots {
+		for effect_slot in &mut self.effect_slots {
 			input = effect_slot.process(dt, input, parameters);
 		}
 		input * (self.volume.value() as f32)

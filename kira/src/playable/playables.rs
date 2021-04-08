@@ -4,22 +4,22 @@ use crate::{
 	arrangement::{Arrangement, ArrangementId},
 	command::ResourceCommand,
 	sound::{Sound, SoundId},
-	static_container::index_map::StaticIndexMap,
+	vec_map::VecMap,
 	Frame,
 };
 
 use super::{Playable, PlayableId, PlayableMut};
 
 pub(crate) struct Playables {
-	sounds: StaticIndexMap<SoundId, Owned<Sound>>,
-	arrangements: StaticIndexMap<ArrangementId, Owned<Arrangement>>,
+	sounds: VecMap<SoundId, Owned<Sound>>,
+	arrangements: VecMap<ArrangementId, Owned<Arrangement>>,
 }
 
 impl Playables {
 	pub fn new(sound_capacity: usize, arrangement_capacity: usize) -> Self {
 		Self {
-			sounds: StaticIndexMap::new(sound_capacity),
-			arrangements: StaticIndexMap::new(arrangement_capacity),
+			sounds: VecMap::new(sound_capacity),
+			arrangements: VecMap::new(arrangement_capacity),
 		}
 	}
 
@@ -67,15 +67,13 @@ impl Playables {
 	pub fn run_command(&mut self, command: ResourceCommand) {
 		match command {
 			ResourceCommand::AddSound(sound) => {
-				self.sounds.try_insert(sound.id(), sound).ok();
+				self.sounds.insert(sound.id(), sound).ok();
 			}
 			ResourceCommand::RemoveSound(id) => {
 				self.sounds.remove(&id);
 			}
 			ResourceCommand::AddArrangement(arrangement) => {
-				self.arrangements
-					.try_insert(arrangement.id(), arrangement)
-					.ok();
+				self.arrangements.insert(arrangement.id(), arrangement).ok();
 			}
 			ResourceCommand::RemoveArrangement(id) => {
 				self.arrangements.remove(&id);
@@ -84,10 +82,10 @@ impl Playables {
 	}
 
 	pub fn update(&mut self, dt: f64) {
-		for (_, sound) in &mut self.sounds {
+		for sound in &mut self.sounds {
 			sound.update_cooldown(dt);
 		}
-		for (_, arrangement) in &mut self.arrangements {
+		for arrangement in &mut self.arrangements {
 			arrangement.update_cooldown(dt);
 		}
 	}

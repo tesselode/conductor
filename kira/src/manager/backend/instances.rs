@@ -4,26 +4,24 @@ use crate::{
 	instance::{Instance, InstanceId, StopInstanceSettings},
 	parameter::Parameters,
 	playable::{PlayableId, Playables},
-	static_container::{index_map::StaticIndexMap, vec::StaticVec},
+	vec_map::VecMap,
 };
 
 use super::mixer::Mixer;
 
 pub(crate) struct Instances {
-	instances: StaticIndexMap<InstanceId, Instance>,
-	instances_to_remove: StaticVec<InstanceId>,
+	instances: VecMap<InstanceId, Instance>,
 }
 
 impl Instances {
 	pub fn new(capacity: usize) -> Self {
 		Self {
-			instances: StaticIndexMap::new(capacity),
-			instances_to_remove: StaticVec::new(capacity),
+			instances: VecMap::new(capacity),
 		}
 	}
 
 	pub fn stop_instances_of(&mut self, playable: PlayableId, settings: StopInstanceSettings) {
-		for (_, instance) in &mut self.instances {
+		for instance in &mut self.instances {
 			if instance.playable_id() == playable {
 				instance.stop(settings);
 			}
@@ -43,9 +41,9 @@ impl Instances {
 						// if we're at the instance limit, remove the instance that was
 						// started the longest time ago.
 						if self.instances.len() >= self.instances.capacity() {
-							self.instances.shift_remove_index(0);
+							self.instances.remove_index(0);
 						}
-						self.instances.try_insert(instance_id, instance).ok();
+						self.instances.insert(instance_id, instance).ok();
 						playable.start_cooldown();
 					}
 				}
@@ -91,14 +89,14 @@ impl Instances {
 				}
 			}
 			InstanceCommand::PauseInstancesOf(playable, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if instance.playable_id() == playable {
 						instance.pause(settings);
 					}
 				}
 			}
 			InstanceCommand::ResumeInstancesOf(playable, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if instance.playable_id() == playable {
 						instance.resume(settings);
 					}
@@ -108,7 +106,7 @@ impl Instances {
 				self.stop_instances_of(playable, settings);
 			}
 			InstanceCommand::PauseGroup(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if let Some(playable) = playables.playable(instance.playable_id()) {
 						if playable.is_in_group(id, all_groups) {
 							instance.pause(settings);
@@ -117,7 +115,7 @@ impl Instances {
 				}
 			}
 			InstanceCommand::ResumeGroup(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if let Some(playable) = playables.playable(instance.playable_id()) {
 						if playable.is_in_group(id, all_groups) {
 							instance.resume(settings);
@@ -126,7 +124,7 @@ impl Instances {
 				}
 			}
 			InstanceCommand::StopGroup(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if let Some(playable) = playables.playable(instance.playable_id()) {
 						if playable.is_in_group(id, all_groups) {
 							instance.stop(settings);
@@ -135,21 +133,21 @@ impl Instances {
 				}
 			}
 			InstanceCommand::PauseInstancesOfSequence(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if instance.sequence_id() == Some(id) {
 						instance.pause(settings);
 					}
 				}
 			}
 			InstanceCommand::ResumeInstancesOfSequence(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if instance.sequence_id() == Some(id) {
 						instance.resume(settings);
 					}
 				}
 			}
 			InstanceCommand::StopInstancesOfSequence(id, settings) => {
-				for (_, instance) in &mut self.instances {
+				for instance in &mut self.instances {
 					if instance.sequence_id() == Some(id) {
 						instance.stop(settings);
 					}
@@ -167,17 +165,12 @@ impl Instances {
 	) {
 		// TODO: simplify this code (preferably by removing self.instances_to_remove)
 		// while making sure every sample of the sound gets played before the instance is removed
-		for (instance_id, instance) in &mut self.instances {
+		for instance in &mut self.instances {
 			if instance.playing() {
 				mixer.add_input(instance.track_index(), instance.get_sample(playables));
 			}
-			if instance.finished() {
-				self.instances_to_remove.try_push(*instance_id).ok();
-			}
 			instance.update(dt, parameters);
 		}
-		for instance_id in self.instances_to_remove.drain(..) {
-			self.instances.shift_remove(&instance_id);
-		}
+		self.instances.retain(|instance| !instance.finished());
 	}
 }

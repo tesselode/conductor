@@ -1,7 +1,7 @@
 use crate::{
 	command::ParameterCommand,
 	parameter::{Parameter, ParameterId},
-	static_container::index_map::StaticIndexMap,
+	vec_map::VecMap,
 };
 
 /// A collection of all of the currently active parameters.
@@ -10,13 +10,13 @@ use crate::{
 /// if you're writing your own effects.
 #[derive(Debug, Clone)]
 pub struct Parameters {
-	parameters: StaticIndexMap<ParameterId, Parameter>,
+	parameters: VecMap<ParameterId, Parameter>,
 }
 
 impl Parameters {
 	pub(crate) fn new(capacity: usize) -> Self {
 		Self {
-			parameters: StaticIndexMap::new(capacity),
+			parameters: VecMap::new(capacity),
 		}
 	}
 
@@ -27,7 +27,7 @@ impl Parameters {
 	pub(crate) fn run_command(&mut self, command: ParameterCommand) {
 		match command {
 			ParameterCommand::AddParameter(id, value) => {
-				self.parameters.try_insert(id, Parameter::new(value)).ok();
+				self.parameters.insert(id, Parameter::new(value)).ok();
 			}
 			ParameterCommand::SetParameter(id, value, tween) => {
 				if let Some(parameter) = self.parameters.get_mut(&id) {
@@ -41,7 +41,7 @@ impl Parameters {
 	}
 
 	pub(crate) fn update(&mut self, dt: f64) {
-		for (_, parameter) in &mut self.parameters {
+		for parameter in &mut self.parameters {
 			parameter.update(dt);
 		}
 	}

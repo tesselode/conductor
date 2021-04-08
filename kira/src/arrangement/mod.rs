@@ -139,7 +139,7 @@ use crate::{
 	group::{groups::Groups, GroupId, GroupSet},
 	mixer::TrackIndex,
 	sound::{handle::SoundHandle, Sound, SoundId},
-	static_container::index_map::StaticIndexMap,
+	vec_map::VecMap,
 	Frame,
 };
 
@@ -283,7 +283,7 @@ impl Arrangement {
 	pub(crate) fn get_frame_at_position(
 		&self,
 		position: f64,
-		sounds: &StaticIndexMap<SoundId, Owned<Sound>>,
+		sounds: &VecMap<SoundId, Owned<Sound>>,
 	) -> Frame {
 		let mut frame = Frame::from_mono(0.0);
 		for clip in &self.clips {

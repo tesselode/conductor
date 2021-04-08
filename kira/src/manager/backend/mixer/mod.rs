@@ -11,22 +11,22 @@ use crate::{
 		SendTrackId, SubTrackId, Track, TrackIndex, TrackKind,
 	},
 	parameter::Parameters,
-	static_container::index_map::StaticIndexMap,
+	vec_map::VecMap,
 	Value,
 };
 
 pub(crate) struct Mixer {
 	main_track: Track,
-	sub_tracks: StaticIndexMap<SubTrackId, Owned<Track>>,
-	send_tracks: StaticIndexMap<SendTrackId, Owned<Track>>,
+	sub_tracks: VecMap<SubTrackId, Owned<Track>>,
+	send_tracks: VecMap<SendTrackId, Owned<Track>>,
 }
 
 impl Mixer {
 	pub fn new(sub_track_capacity: usize, send_track_capacity: usize) -> Self {
 		Self {
 			main_track: Track::new_main_track(),
-			sub_tracks: StaticIndexMap::new(sub_track_capacity),
-			send_tracks: StaticIndexMap::new(send_track_capacity),
+			sub_tracks: VecMap::new(sub_track_capacity),
+			send_tracks: VecMap::new(send_track_capacity),
 		}
 	}
 
@@ -63,10 +63,10 @@ impl Mixer {
 				panic!("No part of the public API should be adding a main track")
 			}
 			TrackKind::Sub { id, .. } => {
-				self.sub_tracks.try_insert(*id, track).ok();
+				self.sub_tracks.insert(*id, track).ok();
 			}
 			TrackKind::Send { id } => {
-				self.send_tracks.try_insert(*id, track).ok();
+				self.send_tracks.insert(*id, track).ok();
 			}
 		}
 	}
@@ -224,7 +224,7 @@ impl Mixer {
 		// process all children of this sub-track and accumulate their outputs
 		let mut children_input = Frame::from_mono(0.0);
 		for i in 0..self.sub_tracks.len() {
-			let (child_id, child_track) = self.sub_tracks.get_index(i).unwrap();
+			let (child_id, child_track) = self.sub_tracks.get_entry_index(i).unwrap();
 			let child_id = *child_id;
 			if let Some(parent_track) = child_track.parent_track() {
 				if parent_track == TrackIndex::Sub(id) {
@@ -253,7 +253,7 @@ impl Mixer {
 	/// to the main track) and sends their output to the main and send tracks.
 	fn process_sub_tracks(&mut self, dt: f64, parameters: &Parameters) {
 		for i in 0..self.sub_tracks.len() {
-			let (id, track) = self.sub_tracks.get_index(i).unwrap();
+			let (id, track) = self.sub_tracks.get_entry_index(i).unwrap();
 			let id = *id;
 			if let Some(TrackIndex::Main) = track.parent_track() {
 				let output = self.process_sub_track(id, dt, parameters);
@@ -264,7 +264,7 @@ impl Mixer {
 
 	/// Processes all send tracks and sends their output to the main track.
 	fn process_send_tracks(&mut self, dt: f64, parameters: &Parameters) {
-		for (_, track) in &mut self.send_tracks {
+		for track in &mut self.send_tracks {
 			self.main_track.add_input(track.process(dt, parameters));
 		}
 	}

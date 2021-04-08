@@ -5,13 +5,14 @@ use crate::{
 	metronome::Metronomes,
 	playable::Playables,
 	sequence::{SequenceInstance, SequenceInstanceId, SequenceOutputCommand},
-	static_container::{index_map::StaticIndexMap, vec::StaticVec},
+	static_container::vec::StaticVec,
+	vec_map::VecMap,
 };
 use basedrop::Owned;
 use std::vec::Drain;
 
 pub(crate) struct Sequences {
-	sequence_instances: StaticIndexMap<SequenceInstanceId, Owned<SequenceInstance>>,
+	sequence_instances: VecMap<SequenceInstanceId, Owned<SequenceInstance>>,
 	sequence_instances_to_remove: StaticVec<SequenceInstanceId>,
 	sequence_output_command_queue: StaticVec<SequenceOutputCommand>,
 	output_command_queue: StaticVec<Command>,
@@ -20,7 +21,7 @@ pub(crate) struct Sequences {
 impl Sequences {
 	pub fn new(sequence_capacity: usize, command_capacity: usize) -> Self {
 		Self {
-			sequence_instances: StaticIndexMap::new(sequence_capacity),
+			sequence_instances: VecMap::new(sequence_capacity),
 			sequence_instances_to_remove: StaticVec::new(sequence_capacity),
 			sequence_output_command_queue: StaticVec::new(command_capacity),
 			output_command_queue: StaticVec::new(command_capacity),
@@ -33,7 +34,7 @@ impl Sequences {
 		mut instance: Owned<SequenceInstance>,
 	) {
 		instance.start();
-		self.sequence_instances.try_insert(id, instance).ok();
+		self.sequence_instances.insert(id, instance).ok();
 	}
 
 	pub fn run_command(&mut self, command: SequenceCommand, groups: &Groups) {
@@ -67,21 +68,21 @@ impl Sequences {
 				}
 			}
 			SequenceCommand::PauseGroup(id) => {
-				for (_, instance) in &mut self.sequence_instances {
+				for instance in &mut self.sequence_instances {
 					if instance.is_in_group(id, groups) {
 						instance.pause();
 					}
 				}
 			}
 			SequenceCommand::ResumeGroup(id) => {
-				for (_, instance) in &mut self.sequence_instances {
+				for instance in &mut self.sequence_instances {
 					if instance.is_in_group(id, groups) {
 						instance.resume();
 					}
 				}
 			}
 			SequenceCommand::StopGroup(id) => {
-				for (_, instance) in &mut self.sequence_instances {
+				for instance in &mut self.sequence_instances {
 					if instance.is_in_group(id, groups) {
 						instance.stop();
 					}
@@ -97,7 +98,7 @@ impl Sequences {
 		metronomes: &Metronomes,
 	) -> Drain<Command> {
 		// update sequences and process their commands
-		for (id, sequence_instance) in &mut self.sequence_instances {
+		for (id, sequence_instance) in self.sequence_instances.iter_entries_mut() {
 			sequence_instance.update(dt, metronomes, &mut self.sequence_output_command_queue);
 			// convert sequence commands to commands that can be consumed
 			// by the backend

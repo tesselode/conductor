@@ -4,17 +4,17 @@ use crate::{
 	command::MetronomeCommand,
 	metronome::{Metronome, MetronomeId},
 	parameter::Parameters,
-	static_container::index_map::StaticIndexMap,
+	vec_map::VecMap,
 };
 
 pub(crate) struct Metronomes {
-	metronomes: StaticIndexMap<MetronomeId, Owned<Metronome>>,
+	metronomes: VecMap<MetronomeId, Owned<Metronome>>,
 }
 
 impl Metronomes {
 	pub fn new(capacity: usize) -> Self {
 		Self {
-			metronomes: StaticIndexMap::new(capacity),
+			metronomes: VecMap::new(capacity),
 		}
 	}
 
@@ -25,7 +25,7 @@ impl Metronomes {
 	pub fn run_command(&mut self, command: MetronomeCommand) {
 		match command {
 			MetronomeCommand::AddMetronome(id, metronome) => {
-				self.metronomes.try_insert(id, metronome).ok();
+				self.metronomes.insert(id, metronome).ok();
 			}
 			MetronomeCommand::RemoveMetronome(id) => {
 				self.metronomes.remove(&id);
@@ -54,7 +54,7 @@ impl Metronomes {
 	}
 
 	pub fn update(&mut self, dt: f64, parameters: &Parameters) {
-		for (_, metronome) in &mut self.metronomes {
+		for metronome in &mut self.metronomes {
 			metronome.update(dt, parameters);
 		}
 	}

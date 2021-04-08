@@ -2,9 +2,9 @@ use basedrop::Owned;
 
 use crate::{
 	sound::{handle::SoundHandle, Sound, SoundId},
-	static_container::index_map::StaticIndexMap,
 	util::inverse_lerp,
 	util::lerp,
+	vec_map::VecMap,
 	Frame,
 };
 
@@ -72,7 +72,7 @@ impl SoundClip {
 	pub(crate) fn get_frame_at_position(
 		&self,
 		position: f64,
-		sounds: &StaticIndexMap<SoundId, Owned<Sound>>,
+		sounds: &VecMap<SoundId, Owned<Sound>>,
 	) -> Frame {
 		if let Some(sound) = sounds.get(&self.sound_id) {
 			let relative_time =

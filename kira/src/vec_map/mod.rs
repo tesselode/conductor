@@ -6,6 +6,7 @@ use std::{
 	slice::{Iter, IterMut},
 };
 
+#[derive(Debug, Clone)]
 pub struct VecMap<K: Eq, V> {
 	vec: Vec<(K, V)>,
 }
@@ -25,12 +26,28 @@ impl<K: Eq, V> VecMap<K, V> {
 		self.vec.capacity()
 	}
 
-	pub fn get(&self, key: K) -> Option<&V> {
-		self.vec.iter().find(|(k, _)| *k == key).map(|(_, v)| v)
+	pub fn get(&self, key: &K) -> Option<&V> {
+		self.vec.iter().find(|(k, _)| k == key).map(|(_, v)| v)
 	}
 
-	pub fn get_mut(&mut self, key: K) -> Option<&mut V> {
-		self.vec.iter_mut().find(|(k, _)| *k == key).map(|(_, v)| v)
+	pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+		self.vec.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v)
+	}
+
+	pub fn get_index(&self, index: usize) -> Option<&V> {
+		self.vec.get(index).map(|(_, v)| v)
+	}
+
+	pub fn get_index_mut(&mut self, index: usize) -> Option<&mut V> {
+		self.vec.get_mut(index).map(|(_, v)| v)
+	}
+
+	pub fn get_entry_index(&self, index: usize) -> Option<&(K, V)> {
+		self.vec.get(index)
+	}
+
+	pub fn get_entry_index_mut(&mut self, index: usize) -> Option<&mut (K, V)> {
+		self.vec.get_mut(index)
 	}
 
 	pub fn iter(&self) -> Map<Iter<(K, V)>, fn(&(K, V)) -> &V> {
@@ -39,6 +56,14 @@ impl<K: Eq, V> VecMap<K, V> {
 
 	pub fn iter_mut(&mut self) -> Map<IterMut<(K, V)>, fn(&mut (K, V)) -> &mut V> {
 		self.vec.iter_mut().map(|(_, v)| v)
+	}
+
+	pub fn iter_entries(&self) -> Iter<(K, V)> {
+		self.vec.iter()
+	}
+
+	pub fn iter_entries_mut(&mut self) -> IterMut<(K, V)> {
+		self.vec.iter_mut()
 	}
 
 	pub fn insert(&mut self, key: K, value: V) -> Result<Option<V>, V> {
@@ -55,6 +80,10 @@ impl<K: Eq, V> VecMap<K, V> {
 			.iter()
 			.position(|(k, _)| k == key)
 			.map(|index| self.vec.remove(index).1)
+	}
+
+	pub fn remove_index(&mut self, index: usize) -> V {
+		self.vec.remove(index).1
 	}
 
 	pub fn retain(&mut self, mut f: impl FnMut(&V) -> bool) {
