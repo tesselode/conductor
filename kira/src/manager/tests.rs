@@ -1,4 +1,7 @@
-use crate::{arrangement::Arrangement, sound::Sound};
+use crate::{
+	arrangement::Arrangement,
+	sound::{data::static_sound::StaticSoundData, Sound},
+};
 
 use super::{
 	error::{
@@ -28,9 +31,11 @@ fn create_manager_with_limited_capacity() -> AudioManager {
 #[test]
 fn returns_error_on_exceeded_sound_capacity() {
 	let mut manager = create_manager_with_limited_capacity();
-	let sound = Sound::from_frames(48000, vec![], Default::default());
-	assert!(manager.add_sound(sound.clone()).is_ok());
-	if let Err(AddSoundError::SoundLimitReached) = manager.add_sound(sound.clone()) {
+	let data = StaticSoundData::from_frames(48000, vec![]);
+	assert!(manager.add_sound(data.clone(), Default::default()).is_ok());
+	if let Err(AddSoundError::SoundLimitReached) =
+		manager.add_sound(data.clone(), Default::default())
+	{
 	} else {
 		panic!("AudioManager::add_sound should return Err(AddSoundError::SoundLimitReached) when the maximum number of sounds is exceeded");
 	}

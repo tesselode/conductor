@@ -12,7 +12,7 @@ use crate::{
 	mixer::{SendTrackId, SubTrackId, TrackIndex},
 	parameter::ParameterId,
 	sequence::error::SequenceError,
-	sound::{error::SoundFromFileError, SoundId},
+	sound::{data::static_sound::error::StaticSoundDataFromFileError, SoundId},
 };
 
 /// Things that can go wrong when creating an `AudioManager`.
@@ -65,7 +65,7 @@ pub enum LoadSoundError {
 
 	/// An error occurred when loading a sound from a file.
 	#[error("{0}")]
-	SoundFromFileError(#[from] SoundFromFileError),
+	SoundFromFileError(#[from] StaticSoundDataFromFileError),
 }
 
 /// Things that can go wrong when removing a sound from the

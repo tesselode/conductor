@@ -80,7 +80,7 @@ impl SoundClip {
 			if relative_time < 0.0 || relative_time > 1.0 {
 				Frame::from_mono(0.0)
 			} else {
-				sound.get_frame_at_position(lerp(
+				sound.frame_at_position(lerp(
 					self.sound_time_range.0,
 					self.sound_time_range.1,
 					relative_time,

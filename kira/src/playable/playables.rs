@@ -57,7 +57,7 @@ impl Playables {
 		match id {
 			PlayableId::Sound(id) => self
 				.sound(id)
-				.map(|sound| sound.get_frame_at_position(position)),
+				.map(|sound| sound.frame_at_position(position)),
 			PlayableId::Arrangement(id) => self
 				.arrangement(id)
 				.map(|arrangement| arrangement.get_frame_at_position(position, &self.sounds)),

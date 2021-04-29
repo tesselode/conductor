@@ -42,7 +42,11 @@ use crate::{
 	sequence::{
 		handle::SequenceInstanceHandle, Sequence, SequenceInstanceId, SequenceInstanceSettings,
 	},
-	sound::{handle::SoundHandle, Sound, SoundId},
+	sound::{
+		data::{static_sound::StaticSoundData, SoundData},
+		handle::SoundHandle,
+		Sound, SoundId, SoundSettings,
+	},
 };
 use cpal::{
 	traits::{DeviceTrait, HostTrait, StreamTrait},
@@ -270,13 +274,18 @@ impl AudioManager {
 	}
 
 	/// Sends a sound to the audio thread and returns a handle to the sound.
-	pub fn add_sound(&mut self, sound: Sound) -> Result<SoundHandle, AddSoundError> {
-		if !self.does_track_exist(sound.default_track()) {
-			return Err(AddSoundError::NoTrackWithIndex(sound.default_track()));
+	pub fn add_sound(
+		&mut self,
+		data: impl SoundData + 'static,
+		settings: SoundSettings,
+	) -> Result<SoundHandle, AddSoundError> {
+		if !self.does_track_exist(settings.default_track) {
+			return Err(AddSoundError::NoTrackWithIndex(settings.default_track));
 		}
-		if let Some(group) = self.first_missing_group_in_set(sound.groups()) {
+		if let Some(group) = self.first_missing_group_in_set(&settings.groups) {
 			return Err(AddSoundError::NoGroupWithId(group));
 		}
+		let sound = Sound::new(data, settings);
 		self.active_ids.add_sound_id(sound.id())?;
 		let handle = SoundHandle::new(&sound, self.command_producer.clone());
 		let sound = Owned::new(&self.resource_collector().handle(), sound);
@@ -295,8 +304,8 @@ impl AudioManager {
 		path: impl AsRef<std::path::Path>,
 		settings: crate::sound::SoundSettings,
 	) -> Result<SoundHandle, error::LoadSoundError> {
-		let sound = Sound::from_file(path, settings)?;
-		Ok(self.add_sound(sound)?)
+		let data = StaticSoundData::from_file(path)?;
+		Ok(self.add_sound(data, settings)?)
 	}
 
 	/// Removes a sound from the audio thread.

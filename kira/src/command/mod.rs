@@ -22,7 +22,6 @@ use crate::{
 	value::Value,
 };
 
-#[derive(Clone)]
 pub(crate) enum ResourceCommand {
 	AddSound(Owned<Sound>),
 	RemoveSound(SoundId),

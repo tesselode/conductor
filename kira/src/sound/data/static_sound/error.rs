@@ -1,11 +1,11 @@
-//! Things that can go wrong with sounds.
+//! Things that can go wrong with static sound data.
 
 use thiserror::Error;
 
-/// Something that can go wrong when loading a sound
-/// from a file.
+/// Something that can go wrong when loading static
+/// sound data from a file.
 #[derive(Debug, Error)]
-pub enum SoundFromFileError {
+pub enum StaticSoundDataFromFileError {
 	/// The sound has more than two channels.
 	#[error("Only mono and stereo audio is supported")]
 	UnsupportedChannelConfiguration,
