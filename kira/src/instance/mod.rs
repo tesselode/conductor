@@ -71,8 +71,9 @@ use crate::{
 	frame::Frame,
 	mixer::TrackIndex,
 	parameter::{Parameter, Parameters},
-	playable::{PlayableId, Playables},
 	sequence::SequenceInstanceId,
+	sound::SoundId,
+	sounds::Sounds,
 	value::CachedValue,
 	value::Value,
 };
@@ -128,7 +129,7 @@ pub enum InstanceState {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Instance {
-	playable_id: PlayableId,
+	sound_id: SoundId,
 	duration: f64,
 	sequence_id: Option<SequenceInstanceId>,
 	track_index: TrackIndex,
@@ -146,7 +147,7 @@ pub(crate) struct Instance {
 
 impl Instance {
 	pub fn new(
-		playable: PlayableId,
+		sound_id: SoundId,
 		duration: f64,
 		sequence_id: Option<SequenceInstanceId>,
 		settings: InternalInstanceSettings,
@@ -159,7 +160,7 @@ impl Instance {
 			fade_volume = Parameter::new(1.0);
 		}
 		Self {
-			playable_id: playable,
+			sound_id,
 			duration,
 			sequence_id,
 			track_index: settings.track,
@@ -176,8 +177,8 @@ impl Instance {
 		}
 	}
 
-	pub fn playable_id(&self) -> PlayableId {
-		self.playable_id
+	pub fn sound_id(&self) -> SoundId {
+		self.sound_id
 	}
 
 	pub fn track_index(&self) -> TrackIndex {
@@ -313,9 +314,9 @@ impl Instance {
 		self.public_position.store(self.position, Ordering::Relaxed);
 	}
 
-	pub fn get_sample(&self, playables: &Playables) -> Frame {
-		let mut out = playables
-			.frame_at_position(self.playable_id, self.position)
+	pub fn get_sample(&self, sounds: &Sounds) -> Frame {
+		let mut out = sounds
+			.frame_at_position(self.sound_id, self.position)
 			.unwrap_or(Frame::from_mono(0.0));
 		out = out.panned(self.panning.value() as f32);
 		out * (self.effective_volume() as f32)

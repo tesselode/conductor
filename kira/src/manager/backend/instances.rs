@@ -3,7 +3,8 @@ use crate::{
 	group::groups::Groups,
 	instance::{Instance, InstanceId, StopInstanceSettings},
 	parameter::Parameters,
-	playable::{PlayableId, Playables},
+	sound::SoundId,
+	sounds::Sounds,
 	static_container::{index_map::StaticIndexMap, vec::StaticVec},
 };
 
@@ -22,9 +23,9 @@ impl Instances {
 		}
 	}
 
-	pub fn stop_instances_of(&mut self, playable: PlayableId, settings: StopInstanceSettings) {
+	pub fn stop_instances_of(&mut self, id: SoundId, settings: StopInstanceSettings) {
 		for (_, instance) in &mut self.instances {
-			if instance.playable_id() == playable {
+			if instance.sound_id() == id {
 				instance.stop(settings);
 			}
 		}
@@ -33,20 +34,20 @@ impl Instances {
 	pub fn run_command(
 		&mut self,
 		command: InstanceCommand,
-		playables: &mut Playables,
+		sounds: &mut Sounds,
 		all_groups: &Groups,
 	) {
 		match command {
 			InstanceCommand::Play(instance_id, instance) => {
-				if let Some(mut playable) = playables.playable_mut(instance.playable_id()) {
-					if !playable.cooling_down() {
+				if let Some(sound) = sounds.sound_mut(instance.sound_id()) {
+					if !sound.cooling_down() {
 						// if we're at the instance limit, remove the instance that was
 						// started the longest time ago.
 						if self.instances.len() >= self.instances.capacity() {
 							self.instances.shift_remove_index(0);
 						}
 						self.instances.try_insert(instance_id, instance).ok();
-						playable.start_cooldown();
+						sound.start_cooldown();
 					}
 				}
 			}
@@ -90,27 +91,27 @@ impl Instances {
 					instance.stop(settings);
 				}
 			}
-			InstanceCommand::PauseInstancesOf(playable, settings) => {
+			InstanceCommand::PauseInstancesOf(id, settings) => {
 				for (_, instance) in &mut self.instances {
-					if instance.playable_id() == playable {
+					if instance.sound_id() == id {
 						instance.pause(settings);
 					}
 				}
 			}
-			InstanceCommand::ResumeInstancesOf(playable, settings) => {
+			InstanceCommand::ResumeInstancesOf(id, settings) => {
 				for (_, instance) in &mut self.instances {
-					if instance.playable_id() == playable {
+					if instance.sound_id() == id {
 						instance.resume(settings);
 					}
 				}
 			}
-			InstanceCommand::StopInstancesOf(playable, settings) => {
-				self.stop_instances_of(playable, settings);
+			InstanceCommand::StopInstancesOf(id, settings) => {
+				self.stop_instances_of(id, settings);
 			}
 			InstanceCommand::PauseGroup(id, settings) => {
 				for (_, instance) in &mut self.instances {
-					if let Some(playable) = playables.playable(instance.playable_id()) {
-						if playable.is_in_group(id, all_groups) {
+					if let Some(sound) = sounds.sound(instance.sound_id()) {
+						if sound.is_in_group(id, all_groups) {
 							instance.pause(settings);
 						}
 					}
@@ -118,8 +119,8 @@ impl Instances {
 			}
 			InstanceCommand::ResumeGroup(id, settings) => {
 				for (_, instance) in &mut self.instances {
-					if let Some(playable) = playables.playable(instance.playable_id()) {
-						if playable.is_in_group(id, all_groups) {
+					if let Some(sound) = sounds.sound(instance.sound_id()) {
+						if sound.is_in_group(id, all_groups) {
 							instance.resume(settings);
 						}
 					}
@@ -127,8 +128,8 @@ impl Instances {
 			}
 			InstanceCommand::StopGroup(id, settings) => {
 				for (_, instance) in &mut self.instances {
-					if let Some(playable) = playables.playable(instance.playable_id()) {
-						if playable.is_in_group(id, all_groups) {
+					if let Some(sound) = sounds.sound(instance.sound_id()) {
+						if sound.is_in_group(id, all_groups) {
 							instance.stop(settings);
 						}
 					}
@@ -161,7 +162,7 @@ impl Instances {
 	pub fn process(
 		&mut self,
 		dt: f64,
-		playables: &Playables,
+		sounds: &Sounds,
 		mixer: &mut Mixer,
 		parameters: &Parameters,
 	) {
@@ -169,7 +170,7 @@ impl Instances {
 		// while making sure every sample of the sound gets played before the instance is removed
 		for (instance_id, instance) in &mut self.instances {
 			if instance.playing() {
-				mixer.add_input(instance.track_index(), instance.get_sample(playables));
+				mixer.add_input(instance.track_index(), instance.get_sample(sounds));
 			}
 			if instance.finished() {
 				self.instances_to_remove.try_push(*instance_id).ok();

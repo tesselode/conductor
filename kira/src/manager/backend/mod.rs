@@ -8,7 +8,7 @@ use self::mixer::Mixer;
 use super::AudioManagerSettings;
 use crate::{
 	command::Command, frame::Frame, group::groups::Groups, metronome::Metronomes,
-	parameter::Parameters, playable::Playables, static_container::vec::StaticVec,
+	parameter::Parameters, sounds::Sounds, static_container::vec::StaticVec,
 };
 use instances::Instances;
 use ringbuf::Consumer;
@@ -18,7 +18,7 @@ use streams::Streams;
 /// Processes audio on the audio thread.
 pub struct Backend {
 	dt: f64,
-	playables: Playables,
+	sounds: Sounds,
 	command_queue: StaticVec<Command>,
 	command_consumer: Consumer<Command>,
 	metronomes: Metronomes,
@@ -38,7 +38,7 @@ impl Backend {
 	) -> Self {
 		Self {
 			dt: 1.0 / sample_rate as f64,
-			playables: Playables::new(settings.num_sounds, settings.num_arrangements),
+			sounds: Sounds::new(settings.num_sounds),
 			command_queue: StaticVec::new(settings.num_commands),
 			command_consumer,
 			parameters: Parameters::new(settings.num_parameters),
@@ -62,14 +62,14 @@ impl Backend {
 		for command in self.command_queue.drain(..) {
 			match command {
 				Command::Resource(command) => {
-					self.playables.run_command(command);
+					self.sounds.run_command(command);
 				}
 				Command::Metronome(command) => {
 					self.metronomes.run_command(command);
 				}
 				Command::Instance(command) => {
 					self.instances
-						.run_command(command, &mut self.playables, &self.groups);
+						.run_command(command, &mut self.sounds, &self.groups);
 				}
 				Command::Sequence(command) => {
 					self.sequences.run_command(command, &self.groups);
@@ -93,7 +93,7 @@ impl Backend {
 	fn update_sequences(&mut self) {
 		for command in self
 			.sequences
-			.update(self.dt, &self.playables, &self.metronomes)
+			.update(self.dt, &self.sounds, &self.metronomes)
 		{
 			self.command_queue.try_push(command.into()).ok();
 		}
@@ -103,12 +103,12 @@ impl Backend {
 	pub fn process(&mut self) -> Frame {
 		self.process_commands();
 		self.parameters.update(self.dt);
-		self.playables.update(self.dt);
+		self.sounds.update(self.dt);
 		self.metronomes.update(self.dt, &self.parameters);
 		self.update_sequences();
 		self.streams.process(self.dt, &mut self.mixer);
 		self.instances
-			.process(self.dt, &self.playables, &mut self.mixer, &self.parameters);
+			.process(self.dt, &self.sounds, &mut self.mixer, &self.parameters);
 		self.mixer.process(self.dt, &self.parameters)
 	}
 }

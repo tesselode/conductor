@@ -4,7 +4,6 @@ use cpal::{BuildStreamError, DefaultStreamConfigError, PlayStreamError};
 use thiserror::Error;
 
 use crate::{
-	arrangement::ArrangementId,
 	audio_stream::AudioStreamId,
 	command::producer::CommandError,
 	group::GroupId,
@@ -75,39 +74,6 @@ pub enum RemoveSoundError {
 	/// No sound with the specified ID exists.
 	#[error("The sound with the specified ID does not exist")]
 	NoSoundWithId(SoundId),
-
-	/// A command could not be sent to the audio thread.
-	#[error("Could not send the command to the audio thread.")]
-	CommandProducerError(#[from] CommandError),
-}
-
-/// Things that can go wrong when adding an arrangement to the audio thread.
-#[derive(Debug, Error)]
-pub enum AddArrangementError {
-	/// The maximum arrangement limit has been reached.
-	#[error("Cannot add an arrangement because the max number of arrangements has been reached")]
-	ArrangementLimitReached,
-
-	/// The default track for the arrangement does not exist.
-	#[error("The default track for the arrangement does not exist")]
-	NoTrackWithIndex(TrackIndex),
-
-	/// The arrangement belongs to a group that does not exist.
-	#[error("The arrangement belongs to a group that does not exist")]
-	NoGroupWithId(GroupId),
-
-	/// A command could not be sent to the audio thread.
-	#[error("Could not send the command to the audio thread.")]
-	CommandProducerError(#[from] CommandError),
-}
-
-/// Things that can go wrong when removing an arrangement from the
-/// audio thread.
-#[derive(Debug, Error)]
-pub enum RemoveArrangementError {
-	/// No arrangement with the specified ID exists.
-	#[error("The arrangement with the specified ID does not exist")]
-	NoArrangementWithId(ArrangementId),
 
 	/// A command could not be sent to the audio thread.
 	#[error("Could not send the command to the audio thread.")]

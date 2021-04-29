@@ -125,55 +125,26 @@
 //! to create these.
 
 mod clip;
-pub mod handle;
-mod id;
-mod settings;
 
-use basedrop::Owned;
 pub use clip::SoundClip;
-use handle::ArrangementHandle;
-pub use id::ArrangementId;
-pub use settings::{ArrangementSettings, LoopArrangementSettings};
 
-use crate::{
-	group::{groups::Groups, GroupId, GroupSet},
-	mixer::TrackIndex,
-	sound::{handle::SoundHandle, Sound, SoundId},
-	static_container::index_map::StaticIndexMap,
-	Frame,
-};
+use crate::{sound::handle::SoundHandle, Frame};
+
+use super::SoundData;
 
 /// An arrangement of sound clips to play at specific times.
-#[derive(Debug, Clone)]
-#[cfg_attr(
-	feature = "serde_support",
-	derive(serde::Serialize, serde::Deserialize)
-)]
+#[derive(Clone)]
 pub struct Arrangement {
-	id: ArrangementId,
 	clips: Vec<SoundClip>,
 	duration: f64,
-	default_track: TrackIndex,
-	cooldown: Option<f64>,
-	semantic_duration: Option<f64>,
-	default_loop_start: Option<f64>,
-	groups: GroupSet,
-	cooldown_timer: f64,
 }
 
 impl Arrangement {
 	/// Creates a new, empty arrangement.
-	pub fn new(settings: ArrangementSettings) -> Self {
+	pub fn new() -> Self {
 		Self {
-			id: settings.id.unwrap_or(ArrangementId::new()),
 			clips: vec![],
 			duration: 0.0,
-			default_track: settings.default_track,
-			cooldown: settings.cooldown,
-			semantic_duration: settings.semantic_duration,
-			default_loop_start: settings.default_loop_start,
-			groups: settings.groups,
-			cooldown_timer: 0.0,
 		}
 	}
 
@@ -183,18 +154,11 @@ impl Arrangement {
 	/// set the point where the sound loops. Any audio after the
 	/// semantic end of the sound will be preserved when the sound
 	/// loops.
-	pub fn new_loop(sound_handle: &SoundHandle, settings: LoopArrangementSettings) -> Self {
+	pub fn new_loop(sound_handle: &SoundHandle) -> Self {
 		let duration = sound_handle
 			.semantic_duration()
 			.unwrap_or(sound_handle.duration());
-		let mut arrangement = Self::new(ArrangementSettings {
-			id: settings.id,
-			default_track: settings.default_track,
-			cooldown: settings.cooldown,
-			semantic_duration: settings.semantic_duration,
-			default_loop_start: Some(duration),
-			groups: settings.groups,
-		});
+		let mut arrangement = Self::new();
 		arrangement
 			.add_clip(SoundClip::new(sound_handle, 0.0))
 			.add_clip(SoundClip::new(sound_handle, duration).trim(duration));
@@ -212,7 +176,6 @@ impl Arrangement {
 	pub fn new_loop_with_intro(
 		intro_sound_handle: &SoundHandle,
 		loop_sound_handle: &SoundHandle,
-		settings: LoopArrangementSettings,
 	) -> Self {
 		let intro_duration = intro_sound_handle
 			.semantic_duration()
@@ -220,14 +183,7 @@ impl Arrangement {
 		let loop_duration = loop_sound_handle
 			.semantic_duration()
 			.unwrap_or(loop_sound_handle.duration());
-		let mut arrangement = Self::new(ArrangementSettings {
-			id: settings.id,
-			default_track: settings.default_track,
-			cooldown: settings.cooldown,
-			semantic_duration: settings.semantic_duration,
-			default_loop_start: Some(intro_duration + loop_duration),
-			groups: settings.groups,
-		});
+		let mut arrangement = Self::new();
 		arrangement
 			.add_clip(SoundClip::new(intro_sound_handle, 0.0))
 			.add_clip(SoundClip::new(loop_sound_handle, intro_duration))
@@ -245,77 +201,24 @@ impl Arrangement {
 		self
 	}
 
-	/// Gets the unique identifier for this arrangement.
-	pub fn id(&self) -> ArrangementId {
-		self.id
-	}
-
 	/// Gets the duration of the arrangement.
 	///
 	/// The duration is always the end of the last playing sound clip.
 	pub fn duration(&self) -> f64 {
 		self.duration
 	}
+}
 
-	/// Gets the default track instances of this arrangement will play on.
-	pub fn default_track(&self) -> TrackIndex {
-		self.default_track
+impl SoundData for Arrangement {
+	fn duration(&self) -> f64 {
+		self.duration
 	}
 
-	/// Gets the groups this arrangement belongs to.
-	pub fn groups(&self) -> &GroupSet {
-		&self.groups
-	}
-
-	/// Gets the "musical length" of the arrangement (if there is one).
-	pub fn semantic_duration(&self) -> Option<f64> {
-		self.semantic_duration
-	}
-
-	/// Returns the default time (in seconds) instances
-	/// of this arrangement will loop back to when they reach
-	/// the end.
-	pub fn default_loop_start(&self) -> Option<f64> {
-		self.default_loop_start
-	}
-
-	/// Gets the frame at the given position of the arrangement.
-	pub(crate) fn get_frame_at_position(
-		&self,
-		position: f64,
-		sounds: &StaticIndexMap<SoundId, Owned<Sound>>,
-	) -> Frame {
-		let mut frame = Frame::from_mono(0.0);
-		for clip in &self.clips {
-			frame += clip.get_frame_at_position(position, sounds);
-		}
-		frame
-	}
-
-	/// Starts the cooldown timer for the arrangement.
-	pub(crate) fn start_cooldown(&mut self) {
-		if let Some(cooldown) = self.cooldown {
-			self.cooldown_timer = cooldown;
-		}
-	}
-
-	/// Updates the cooldown timer for the arrangement.
-	pub(crate) fn update_cooldown(&mut self, dt: f64) {
-		if self.cooldown_timer > 0.0 {
-			self.cooldown_timer -= dt;
-		}
-	}
-
-	/// Gets whether the arrangement is currently "cooling down".
-	///
-	/// If it is, a new instance of the arrangement should not
-	/// be started until the timer is up.
-	pub(crate) fn cooling_down(&self) -> bool {
-		self.cooldown_timer > 0.0
-	}
-
-	/// Returns if this arrangement is in the group with the given ID.
-	pub(crate) fn is_in_group(&self, id: GroupId, all_groups: &Groups) -> bool {
-		self.groups.has_ancestor(id, all_groups)
+	fn frame_at_position(&self, position: f64) -> Frame {
+		self.clips
+			.iter()
+			.fold(Frame::from_mono(0.0), |frame, clip| {
+				frame + clip.frame_at_position(position)
+			})
 	}
 }

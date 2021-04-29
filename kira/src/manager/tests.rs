@@ -1,12 +1,9 @@
-use crate::{
-	arrangement::Arrangement,
-	sound::{data::static_sound::StaticSoundData, Sound},
-};
+use crate::sound::data::static_sound::StaticSoundData;
 
 use super::{
 	error::{
-		AddArrangementError, AddGroupError, AddMetronomeError, AddParameterError,
-		AddSendTrackError, AddSoundError, AddSubTrackError,
+		AddGroupError, AddMetronomeError, AddParameterError, AddSendTrackError, AddSoundError,
+		AddSubTrackError,
 	},
 	AudioManager, AudioManagerSettings,
 };
@@ -38,19 +35,6 @@ fn returns_error_on_exceeded_sound_capacity() {
 	{
 	} else {
 		panic!("AudioManager::add_sound should return Err(AddSoundError::SoundLimitReached) when the maximum number of sounds is exceeded");
-	}
-}
-
-#[test]
-fn returns_error_on_exceeded_arrangement_capacity() {
-	let mut manager = create_manager_with_limited_capacity();
-	let arrangement = Arrangement::new(Default::default());
-	assert!(manager.add_arrangement(arrangement.clone()).is_ok());
-	if let Err(AddArrangementError::ArrangementLimitReached) =
-		manager.add_arrangement(arrangement.clone())
-	{
-	} else {
-		panic!("AudioManager::add_arrangement should return Err(AddArrangementError::ArrangementLimitReached) when the maximum number of arrangements is exceeded");
 	}
 }
 

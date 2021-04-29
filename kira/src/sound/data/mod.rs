@@ -1,3 +1,4 @@
+pub mod arrangement;
 pub mod static_sound;
 
 use crate::Frame;

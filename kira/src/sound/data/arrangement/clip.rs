@@ -1,29 +1,23 @@
-use basedrop::Owned;
+use std::sync::Arc;
 
 use crate::{
-	sound::{handle::SoundHandle, Sound, SoundId},
-	static_container::index_map::StaticIndexMap,
-	util::inverse_lerp,
-	util::lerp,
+	sound::{data::SoundData, handle::SoundHandle},
+	util::{inverse_lerp, lerp},
 	Frame,
 };
 
 /// A segment of a sound in an arrangement.
-#[derive(Debug, Copy, Clone)]
-#[cfg_attr(
-	feature = "serde_support",
-	derive(serde::Serialize, serde::Deserialize)
-)]
+#[derive(Clone)]
 pub struct SoundClip {
-	/// The ID of the sound.
-	pub sound_id: SoundId,
+	/// The sound data this clip will play.
+	pub(super) data: Arc<dyn SoundData>,
 	/// The start and end point of the clip.
-	pub clip_time_range: (f64, f64),
+	pub(super) clip_time_range: (f64, f64),
 	/// The start and end point of the sound.
 	///
 	/// This range of the sound is stretched over
 	/// the range of the clip.
-	pub sound_time_range: (f64, f64),
+	pub(super) sound_time_range: (f64, f64),
 }
 
 impl SoundClip {
@@ -32,7 +26,7 @@ impl SoundClip {
 	/// speed up/slow down.
 	pub fn new(sound_handle: &SoundHandle, clip_start_time: f64) -> Self {
 		Self {
-			sound_id: sound_handle.id(),
+			data: sound_handle.data(),
 			clip_time_range: (clip_start_time, clip_start_time + sound_handle.duration()),
 			sound_time_range: (0.0, sound_handle.duration()),
 		}
@@ -69,25 +63,16 @@ impl SoundClip {
 	///
 	/// If the time is outside of the clip's time range, no sound
 	/// will be produced.
-	pub(crate) fn get_frame_at_position(
-		&self,
-		position: f64,
-		sounds: &StaticIndexMap<SoundId, Owned<Sound>>,
-	) -> Frame {
-		if let Some(sound) = sounds.get(&self.sound_id) {
-			let relative_time =
-				inverse_lerp(self.clip_time_range.0, self.clip_time_range.1, position);
-			if relative_time < 0.0 || relative_time > 1.0 {
-				Frame::from_mono(0.0)
-			} else {
-				sound.frame_at_position(lerp(
-					self.sound_time_range.0,
-					self.sound_time_range.1,
-					relative_time,
-				))
-			}
-		} else {
+	pub(crate) fn frame_at_position(&self, position: f64) -> Frame {
+		let relative_time = inverse_lerp(self.clip_time_range.0, self.clip_time_range.1, position);
+		if relative_time < 0.0 || relative_time > 1.0 {
 			Frame::from_mono(0.0)
+		} else {
+			self.data.frame_at_position(lerp(
+				self.sound_time_range.0,
+				self.sound_time_range.1,
+				relative_time,
+			))
 		}
 	}
 }

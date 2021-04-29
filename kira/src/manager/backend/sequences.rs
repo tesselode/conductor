@@ -3,8 +3,8 @@ use crate::{
 	group::groups::Groups,
 	instance::Instance,
 	metronome::Metronomes,
-	playable::Playables,
 	sequence::{SequenceInstance, SequenceInstanceId, SequenceOutputCommand},
+	sounds::Sounds,
 	static_container::{index_map::StaticIndexMap, vec::StaticVec},
 };
 use basedrop::Owned;
@@ -90,12 +90,7 @@ impl Sequences {
 		}
 	}
 
-	pub fn update(
-		&mut self,
-		dt: f64,
-		playables: &Playables,
-		metronomes: &Metronomes,
-	) -> Drain<Command> {
+	pub fn update(&mut self, dt: f64, sounds: &Sounds, metronomes: &Metronomes) -> Drain<Command> {
 		// update sequences and process their commands
 		for (id, sequence_instance) in &mut self.sequence_instances {
 			sequence_instance.update(dt, metronomes, &mut self.sequence_output_command_queue);
@@ -103,19 +98,19 @@ impl Sequences {
 			// by the backend
 			for command in self.sequence_output_command_queue.drain(..) {
 				match command {
-					SequenceOutputCommand::PlaySound(playable_id, instance_id, settings) => {
-						if let Some(playable) = playables.playable(playable_id) {
+					SequenceOutputCommand::PlaySound(sound_id, instance_id, settings) => {
+						if let Some(sound) = sounds.sound(sound_id) {
 							self.output_command_queue
 								.try_push(Command::Instance(InstanceCommand::Play(
 									instance_id,
 									Instance::new(
-										playable_id,
-										playable.duration(),
+										sound_id,
+										sound.duration(),
 										Some(*id),
 										settings.into_internal(
-											playable.duration(),
-											playable.default_loop_start(),
-											playable.default_track(),
+											sound.duration(),
+											sound.default_loop_start(),
+											sound.default_track(),
 										),
 									),
 								)))

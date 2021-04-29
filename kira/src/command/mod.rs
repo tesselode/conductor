@@ -3,7 +3,6 @@ pub mod producer;
 use basedrop::Owned;
 
 use crate::{
-	arrangement::{Arrangement, ArrangementId},
 	audio_stream::{AudioStream, AudioStreamId},
 	group::{Group, GroupId},
 	instance::{
@@ -15,7 +14,6 @@ use crate::{
 		SendTrackId, SubTrackId, Track, TrackIndex,
 	},
 	parameter::{tween::Tween, ParameterId},
-	playable::PlayableId,
 	sequence::{SequenceInstance, SequenceInstanceId},
 	sound::{Sound, SoundId},
 	tempo::Tempo,
@@ -25,8 +23,6 @@ use crate::{
 pub(crate) enum ResourceCommand {
 	AddSound(Owned<Sound>),
 	RemoveSound(SoundId),
-	AddArrangement(Owned<Arrangement>),
-	RemoveArrangement(ArrangementId),
 }
 
 #[derive(Debug, Clone)]
@@ -40,9 +36,9 @@ pub(crate) enum InstanceCommand {
 	PauseInstance(InstanceId, PauseInstanceSettings),
 	ResumeInstance(InstanceId, ResumeInstanceSettings),
 	StopInstance(InstanceId, StopInstanceSettings),
-	PauseInstancesOf(PlayableId, PauseInstanceSettings),
-	ResumeInstancesOf(PlayableId, ResumeInstanceSettings),
-	StopInstancesOf(PlayableId, StopInstanceSettings),
+	PauseInstancesOf(SoundId, PauseInstanceSettings),
+	ResumeInstancesOf(SoundId, ResumeInstanceSettings),
+	StopInstancesOf(SoundId, StopInstanceSettings),
 	PauseInstancesOfSequence(SequenceInstanceId, PauseInstanceSettings),
 	ResumeInstancesOfSequence(SequenceInstanceId, ResumeInstanceSettings),
 	StopInstancesOfSequence(SequenceInstanceId, StopInstanceSettings),

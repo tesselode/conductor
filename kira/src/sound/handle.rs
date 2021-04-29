@@ -1,5 +1,7 @@
 //! An interface for controlling sounds.
 
+use std::sync::Arc;
+
 use crate::{
 	command::{
 		producer::{CommandError, CommandProducer},
@@ -12,12 +14,13 @@ use crate::{
 	mixer::TrackIndex,
 };
 
-use super::{Sound, SoundId};
+use super::{data::SoundData, Sound, SoundId};
 
 /// Allows you to control a sound.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SoundHandle {
 	id: SoundId,
+	data: Arc<dyn SoundData>,
 	duration: f64,
 	default_track: TrackIndex,
 	semantic_duration: Option<f64>,
@@ -29,6 +32,7 @@ impl SoundHandle {
 	pub(crate) fn new(sound: &Sound, command_producer: CommandProducer) -> Self {
 		Self {
 			id: sound.id(),
+			data: sound.data(),
 			duration: sound.duration(),
 			default_track: sound.default_track(),
 			semantic_duration: sound.semantic_duration(),
@@ -40,6 +44,10 @@ impl SoundHandle {
 	/// Returns the ID of the sound.
 	pub fn id(&self) -> SoundId {
 		self.id
+	}
+
+	pub(crate) fn data(&self) -> Arc<dyn SoundData> {
+		self.data.clone()
 	}
 
 	/// Returns the duration of the sound (in seconds).

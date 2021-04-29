@@ -1,5 +1,4 @@
 use crate::{
-	arrangement::ArrangementId,
 	audio_stream::AudioStreamId,
 	group::GroupId,
 	metronome::MetronomeId,
@@ -12,17 +11,16 @@ use indexmap::IndexSet;
 
 use super::{
 	error::{
-		AddArrangementError, AddGroupError, AddMetronomeError, AddParameterError,
-		AddSendTrackError, AddSoundError, AddStreamError, AddSubTrackError, RemoveArrangementError,
-		RemoveGroupError, RemoveMetronomeError, RemoveParameterError, RemoveSendTrackError,
-		RemoveSoundError, RemoveStreamError, RemoveSubTrackError,
+		AddGroupError, AddMetronomeError, AddParameterError, AddSendTrackError, AddSoundError,
+		AddStreamError, AddSubTrackError, RemoveGroupError, RemoveMetronomeError,
+		RemoveParameterError, RemoveSendTrackError, RemoveSoundError, RemoveStreamError,
+		RemoveSubTrackError,
 	},
 	AudioManagerSettings,
 };
 
 pub struct ActiveIds {
 	pub active_sound_ids: IndexSet<SoundId>,
-	pub active_arrangement_ids: IndexSet<ArrangementId>,
 	pub active_parameter_ids: IndexSet<ParameterId>,
 	pub active_sub_track_ids: IndexSet<SubTrackId>,
 	pub active_send_track_ids: IndexSet<SendTrackId>,
@@ -35,7 +33,6 @@ impl ActiveIds {
 	pub fn new(settings: &AudioManagerSettings) -> Self {
 		Self {
 			active_sound_ids: IndexSet::with_capacity(settings.num_sounds),
-			active_arrangement_ids: IndexSet::with_capacity(settings.num_arrangements),
 			active_parameter_ids: IndexSet::with_capacity(settings.num_parameters),
 			active_sub_track_ids: IndexSet::with_capacity(settings.num_sub_tracks),
 			active_send_track_ids: IndexSet::with_capacity(settings.num_send_tracks),
@@ -56,24 +53,6 @@ impl ActiveIds {
 	pub fn remove_sound_id(&mut self, id: SoundId) -> Result<(), RemoveSoundError> {
 		if !self.active_sound_ids.remove(&id) {
 			return Err(RemoveSoundError::NoSoundWithId(id));
-		}
-		Ok(())
-	}
-
-	pub fn add_arrangement_id(&mut self, id: ArrangementId) -> Result<(), AddArrangementError> {
-		if self.active_arrangement_ids.len() >= self.active_arrangement_ids.capacity() {
-			return Err(AddArrangementError::ArrangementLimitReached);
-		}
-		self.active_arrangement_ids.insert(id);
-		Ok(())
-	}
-
-	pub fn remove_arrangement_id(
-		&mut self,
-		id: ArrangementId,
-	) -> Result<(), RemoveArrangementError> {
-		if !self.active_arrangement_ids.remove(&id) {
-			return Err(RemoveArrangementError::NoArrangementWithId(id));
 		}
 		Ok(())
 	}

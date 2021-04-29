@@ -18,15 +18,14 @@ use backend::Backend;
 pub use backend::Backend;
 use basedrop::{Collector, Owned};
 use error::{
-	AddArrangementError, AddGroupError, AddMetronomeError, AddParameterError, AddSendTrackError,
-	AddSoundError, AddStreamError, AddSubTrackError, RemoveArrangementError, RemoveGroupError,
-	RemoveMetronomeError, RemoveParameterError, RemoveSendTrackError, RemoveSoundError,
-	RemoveStreamError, RemoveSubTrackError, SetupError, StartSequenceError,
+	AddGroupError, AddMetronomeError, AddParameterError, AddSendTrackError, AddSoundError,
+	AddStreamError, AddSubTrackError, RemoveGroupError, RemoveMetronomeError, RemoveParameterError,
+	RemoveSendTrackError, RemoveSoundError, RemoveStreamError, RemoveSubTrackError, SetupError,
+	StartSequenceError,
 };
 use ringbuf::{Consumer, Producer, RingBuffer};
 
 use crate::{
-	arrangement::{handle::ArrangementHandle, Arrangement, ArrangementId},
 	audio_stream::{AudioStream, AudioStreamId},
 	command::{
 		producer::CommandProducer, Command, GroupCommand, MetronomeCommand, MixerCommand,
@@ -314,39 +313,6 @@ impl AudioManager {
 		self.active_ids.remove_sound_id(id)?;
 		self.command_producer
 			.push(ResourceCommand::RemoveSound(id).into())?;
-		Ok(())
-	}
-
-	/// Sends a arrangement to the audio thread and returns a handle to the arrangement.
-	pub fn add_arrangement(
-		&mut self,
-		arrangement: Arrangement,
-	) -> Result<ArrangementHandle, AddArrangementError> {
-		if !self.does_track_exist(arrangement.default_track()) {
-			return Err(AddArrangementError::NoTrackWithIndex(
-				arrangement.default_track(),
-			));
-		}
-		if let Some(group) = self.first_missing_group_in_set(arrangement.groups()) {
-			return Err(AddArrangementError::NoGroupWithId(group));
-		}
-		self.active_ids.add_arrangement_id(arrangement.id())?;
-		let handle = ArrangementHandle::new(&arrangement, self.command_producer.clone());
-		let arrangement = Owned::new(&self.resource_collector().handle(), arrangement);
-		self.command_producer
-			.push(ResourceCommand::AddArrangement(arrangement).into())?;
-		Ok(handle)
-	}
-
-	/// Removes an arrangement from the audio thread.
-	pub fn remove_arrangement(
-		&mut self,
-		id: impl Into<ArrangementId>,
-	) -> Result<(), RemoveArrangementError> {
-		let id = id.into();
-		self.active_ids.remove_arrangement_id(id)?;
-		self.command_producer
-			.push(ResourceCommand::RemoveArrangement(id.into()).into())?;
 		Ok(())
 	}
 

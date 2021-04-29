@@ -106,7 +106,6 @@
 
 #![warn(missing_docs)]
 
-pub mod arrangement;
 pub mod audio_stream;
 mod command;
 mod duration;
@@ -117,9 +116,9 @@ pub mod manager;
 pub mod metronome;
 pub mod mixer;
 pub mod parameter;
-mod playable;
 pub mod sequence;
 pub mod sound;
+mod sounds;
 mod static_container;
 mod tempo;
 mod util;
@@ -128,6 +127,5 @@ mod value;
 pub use command::producer::CommandError;
 pub use duration::Duration;
 pub use frame::Frame;
-pub use playable::PlayableId;
 pub use tempo::Tempo;
 pub use value::{CachedValue, Value};

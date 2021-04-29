@@ -5,6 +5,8 @@ pub mod handle;
 mod id;
 mod settings;
 
+use std::sync::Arc;
+
 pub use id::SoundId;
 pub use settings::SoundSettings;
 
@@ -19,7 +21,7 @@ use self::data::SoundData;
 /// A piece of audio that can be played by an [`AudioManager`](crate::manager::AudioManager).
 pub(crate) struct Sound {
 	id: SoundId,
-	data: Box<dyn SoundData>,
+	data: Arc<dyn SoundData>,
 	default_track: TrackIndex,
 	cooldown: Option<f64>,
 	semantic_duration: Option<f64>,
@@ -32,7 +34,7 @@ impl Sound {
 	pub fn new(data: impl SoundData + 'static, settings: SoundSettings) -> Self {
 		Self {
 			id: settings.id.unwrap_or(SoundId::new()),
-			data: Box::new(data),
+			data: Arc::new(data),
 			default_track: settings.default_track,
 			cooldown: settings.cooldown,
 			semantic_duration: settings.semantic_duration,
@@ -45,6 +47,11 @@ impl Sound {
 	/// Gets the unique identifier for this sound.
 	pub fn id(&self) -> SoundId {
 		self.id
+	}
+
+	/// Gets this sound's data.
+	pub fn data(&self) -> Arc<dyn SoundData> {
+		self.data.clone()
 	}
 
 	/// Gets the default track instances of this sound will play on.
