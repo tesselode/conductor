@@ -42,6 +42,10 @@ impl<K: Eq + Hash, V> StaticIndexMap<K, V> {
 		self.index_map.get_index(index)
 	}
 
+	pub fn get_index_mut(&mut self, index: usize) -> Option<(&mut K, &mut V)> {
+		self.index_map.get_index_mut(index)
+	}
+
 	pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
 		self.index_map.get_mut(key)
 	}

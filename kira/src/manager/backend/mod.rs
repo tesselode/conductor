@@ -7,7 +7,7 @@ use crate::{command::Command, frame::Frame, sound::sounds::Sounds};
 
 use super::{ctx::AudioContext, AudioManagerSettings};
 
-pub struct Backend {
+pub(crate) struct Backend {
 	ctx: Arc<AudioContext>,
 	dt: f64,
 	command_consumer: Consumer<Command>,
@@ -37,6 +37,6 @@ impl Backend {
 				}
 			}
 		}
-		Frame::from_mono(0.0)
+		self.sounds.process(self.dt)
 	}
 }

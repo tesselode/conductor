@@ -1,10 +1,10 @@
 use basedrop::Owned;
 
-use crate::{command::SoundCommand, static_container::index_map::StaticIndexMap};
+use crate::{command::SoundCommand, frame::Frame, static_container::index_map::StaticIndexMap};
 
 use super::{Sound, SoundId};
 
-pub struct Sounds {
+pub(crate) struct Sounds {
 	sounds: StaticIndexMap<SoundId, Owned<Sound>>,
 }
 
@@ -23,6 +23,23 @@ impl Sounds {
 			SoundCommand::RemoveSound { id } => {
 				self.sounds.remove(&id);
 			}
+			SoundCommand::AddInstance {
+				sound_id,
+				instance_id,
+				instance,
+			} => {
+				if let Some(sound) = self.sounds.get_mut(&sound_id) {
+					sound.add_instance(instance_id, instance);
+				}
+			}
 		}
+	}
+
+	pub fn process(&mut self, dt: f64) -> Frame {
+		self.sounds
+			.iter_mut()
+			.fold(Frame::from_mono(0.0), |previous, (_, sound)| {
+				previous + sound.process(dt)
+			})
 	}
 }

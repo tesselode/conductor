@@ -1,12 +1,25 @@
 use basedrop::Owned;
 
-use crate::sound::{Sound, SoundId};
+use crate::sound::{
+	instance::{Instance, InstanceId},
+	Sound, SoundId,
+};
 
-pub enum SoundCommand {
-	AddSound { id: SoundId, sound: Owned<Sound> },
-	RemoveSound { id: SoundId },
+pub(crate) enum SoundCommand {
+	AddSound {
+		id: SoundId,
+		sound: Owned<Sound>,
+	},
+	RemoveSound {
+		id: SoundId,
+	},
+	AddInstance {
+		sound_id: SoundId,
+		instance_id: InstanceId,
+		instance: Instance,
+	},
 }
 
-pub enum Command {
+pub(crate) enum Command {
 	Sound(SoundCommand),
 }

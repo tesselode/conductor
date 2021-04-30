@@ -14,7 +14,11 @@ use ringbuf::{Producer, RingBuffer};
 
 use crate::{
 	command::{Command, SoundCommand},
-	sound::{data::SoundData, Sound, SoundId},
+	sound::{
+		data::SoundData,
+		instance::{Instance, InstanceId},
+		Sound, SoundId, SoundSettings,
+	},
 };
 
 use self::{
@@ -83,9 +87,13 @@ impl AudioManager {
 	pub fn add_sound(
 		&mut self,
 		data: impl SoundData + 'static,
+		settings: SoundSettings,
 	) -> Result<SoundId, CommandQueueFullError> {
 		let id = SoundId::new();
-		let sound = Owned::new(&self.collector.handle(), Sound::new(Arc::new(data)));
+		let sound = Owned::new(
+			&self.collector.handle(),
+			Sound::new(Arc::new(data), settings),
+		);
 		self.command_producer
 			.push(Command::Sound(SoundCommand::AddSound { id, sound }))
 			.map_err(|_| CommandQueueFullError)?;
@@ -95,6 +103,18 @@ impl AudioManager {
 	pub fn remove_sound(&mut self, id: SoundId) -> Result<(), CommandQueueFullError> {
 		self.command_producer
 			.push(Command::Sound(SoundCommand::RemoveSound { id }))
+			.map_err(|_| CommandQueueFullError)
+	}
+
+	pub fn play(&mut self, id: SoundId) -> Result<(), CommandQueueFullError> {
+		let instance_id = InstanceId::new();
+		let instance = Instance::new();
+		self.command_producer
+			.push(Command::Sound(SoundCommand::AddInstance {
+				sound_id: id,
+				instance_id,
+				instance,
+			}))
 			.map_err(|_| CommandQueueFullError)
 	}
 
