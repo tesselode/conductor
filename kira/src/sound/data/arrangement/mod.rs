@@ -128,7 +128,10 @@ mod clip;
 
 pub use clip::SoundClip;
 
-use crate::{sound::handle::SoundHandle, Frame};
+use crate::{
+	sound::{handle::SoundHandle, SoundSettings},
+	Frame,
+};
 
 use super::SoundData;
 
@@ -154,7 +157,7 @@ impl Arrangement {
 	/// set the point where the sound loops. Any audio after the
 	/// semantic end of the sound will be preserved when the sound
 	/// loops.
-	pub fn new_loop(sound_handle: &SoundHandle) -> Self {
+	pub fn new_loop(sound_handle: &SoundHandle) -> (Self, SoundSettings) {
 		let duration = sound_handle
 			.semantic_duration()
 			.unwrap_or(sound_handle.duration());
@@ -162,7 +165,10 @@ impl Arrangement {
 		arrangement
 			.add_clip(SoundClip::new(sound_handle, 0.0))
 			.add_clip(SoundClip::new(sound_handle, duration).trim(duration));
-		arrangement
+		(
+			arrangement,
+			SoundSettings::new().default_loop_start(duration),
+		)
 	}
 
 	/// Creates a new arrangement that plays an intro sound, then
@@ -176,7 +182,7 @@ impl Arrangement {
 	pub fn new_loop_with_intro(
 		intro_sound_handle: &SoundHandle,
 		loop_sound_handle: &SoundHandle,
-	) -> Self {
+	) -> (Self, SoundSettings) {
 		let intro_duration = intro_sound_handle
 			.semantic_duration()
 			.unwrap_or(intro_sound_handle.duration());
@@ -191,7 +197,10 @@ impl Arrangement {
 				SoundClip::new(loop_sound_handle, intro_duration + loop_duration)
 					.trim(loop_duration),
 			);
-		arrangement
+		(
+			arrangement,
+			SoundSettings::new().default_loop_start(intro_duration + loop_duration),
+		)
 	}
 
 	/// Adds a sound clip to the arrangement.
