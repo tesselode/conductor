@@ -1,4 +1,5 @@
 pub mod data;
+pub(crate) mod sounds;
 
 use std::sync::{atomic::AtomicUsize, Arc};
 

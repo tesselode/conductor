@@ -20,3 +20,7 @@ pub enum SetupError {
 	#[error("{0}")]
 	PlayStreamError(#[from] PlayStreamError),
 }
+
+#[derive(Debug, Error)]
+#[error("A command could not be sent to the audio thread because the command queue is full")]
+pub struct CommandQueueFullError;
