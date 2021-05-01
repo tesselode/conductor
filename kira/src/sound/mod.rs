@@ -1,4 +1,5 @@
 pub mod data;
+pub mod handle;
 pub mod instance;
 pub(crate) mod sounds;
 
@@ -10,6 +11,7 @@ use crate::{frame::Frame, static_container::index_map::StaticIndexMap};
 
 use self::{
 	data::SoundData,
+	handle::SoundHandle,
 	instance::{Instance, InstanceId, InstanceState},
 };
 
@@ -21,6 +23,12 @@ pub struct SoundId(usize);
 impl SoundId {
 	pub(crate) fn new() -> Self {
 		Self(NEXT_SOUND_INDEX.fetch_add(1, Ordering::SeqCst))
+	}
+}
+
+impl From<&SoundHandle> for SoundId {
+	fn from(handle: &SoundHandle) -> Self {
+		handle.id()
 	}
 }
 

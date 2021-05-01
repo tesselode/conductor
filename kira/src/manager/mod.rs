@@ -10,22 +10,22 @@ use cpal::{
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 	Stream,
 };
-use ringbuf::{Producer, RingBuffer};
+use ringbuf::RingBuffer;
 
 use crate::{
-	command::{Command, SoundCommand},
+	command::{
+		producer::{CommandError, CommandProducer},
+		Command, SoundCommand,
+	},
 	sound::{
 		data::SoundData,
+		handle::SoundHandle,
 		instance::{Instance, InstanceId},
 		Sound, SoundId, SoundSettings,
 	},
 };
 
-use self::{
-	backend::Backend,
-	ctx::AudioContext,
-	error::{CommandQueueFullError, SetupError},
-};
+use self::{backend::Backend, ctx::AudioContext, error::SetupError};
 
 pub struct AudioManagerSettings {
 	pub num_commands: usize,
@@ -43,7 +43,7 @@ impl Default for AudioManagerSettings {
 
 pub struct AudioManager {
 	ctx: Arc<AudioContext>,
-	command_producer: Producer<Command>,
+	command_producer: CommandProducer,
 	collector: Collector,
 	_stream: Stream,
 }
@@ -78,7 +78,7 @@ impl AudioManager {
 		stream.play()?;
 		Ok(Self {
 			ctx,
-			command_producer,
+			command_producer: CommandProducer::new(command_producer),
 			collector: Collector::new(),
 			_stream: stream,
 		})
@@ -88,34 +88,21 @@ impl AudioManager {
 		&mut self,
 		data: impl SoundData + 'static,
 		settings: SoundSettings,
-	) -> Result<SoundId, CommandQueueFullError> {
+	) -> Result<SoundHandle, CommandError> {
 		let id = SoundId::new();
 		let sound = Owned::new(
 			&self.collector.handle(),
 			Sound::new(Arc::new(data), settings),
 		);
 		self.command_producer
-			.push(Command::Sound(SoundCommand::AddSound { id, sound }))
-			.map_err(|_| CommandQueueFullError)?;
-		Ok(id)
+			.push(Command::Sound(SoundCommand::AddSound { id, sound }))?;
+		let handle = SoundHandle::new(id, self.command_producer.clone());
+		Ok(handle)
 	}
 
-	pub fn remove_sound(&mut self, id: SoundId) -> Result<(), CommandQueueFullError> {
+	pub fn remove_sound(&mut self, id: impl Into<SoundId>) -> Result<(), CommandError> {
 		self.command_producer
-			.push(Command::Sound(SoundCommand::RemoveSound { id }))
-			.map_err(|_| CommandQueueFullError)
-	}
-
-	pub fn play(&mut self, id: SoundId) -> Result<(), CommandQueueFullError> {
-		let instance_id = InstanceId::new();
-		let instance = Instance::new();
-		self.command_producer
-			.push(Command::Sound(SoundCommand::AddInstance {
-				sound_id: id,
-				instance_id,
-				instance,
-			}))
-			.map_err(|_| CommandQueueFullError)
+			.push(Command::Sound(SoundCommand::RemoveSound { id: id.into() }))
 	}
 
 	pub fn free_unused_resources(&mut self) {

@@ -1,6 +1,10 @@
+pub mod handle;
+
 use std::sync::atomic::AtomicUsize;
 
 use atomig::Ordering;
+
+use self::handle::InstanceHandle;
 
 static NEXT_INSTANCE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
@@ -11,6 +15,12 @@ impl InstanceId {
 	pub(crate) fn new() -> Self {
 		Self(NEXT_INSTANCE_INDEX.fetch_add(1, Ordering::SeqCst))
 	}
+}
+
+impl From<&InstanceHandle> for InstanceId {
+    fn from(handle: &InstanceHandle) -> Self {
+        handle.id()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
