@@ -1,5 +1,6 @@
-use std::hash::Hash;
+use std::hash::{BuildHasherDefault, Hash};
 
+use hash_hasher::{HashBuildHasher, HashHasher};
 use indexmap::IndexMap;
 
 /// A thin wrapper around `IndexMap`s that prevents any memory
@@ -11,7 +12,7 @@ use indexmap::IndexMap;
 #[derive(Debug, Clone)]
 pub struct StaticIndexMap<K: Eq + Hash, V> {
 	capacity: usize,
-	index_map: IndexMap<K, V>,
+	index_map: IndexMap<K, V, BuildHasherDefault<HashHasher>>,
 }
 
 impl<K: Eq + Hash, V> StaticIndexMap<K, V> {
@@ -22,7 +23,7 @@ impl<K: Eq + Hash, V> StaticIndexMap<K, V> {
 			// capacity to make sure the map will never need to allocate
 			// memory to maintain the requested capacity.
 			// See here: https://github.com/rust-lang/hashbrown/pull/255
-			index_map: IndexMap::with_capacity(capacity * 2),
+			index_map: IndexMap::with_capacity_and_hasher(capacity * 2, HashBuildHasher::default()),
 		}
 	}
 
