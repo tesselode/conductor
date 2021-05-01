@@ -83,6 +83,10 @@ impl Sound {
 		}
 	}
 
+	pub fn data(&self) -> &Arc<dyn SoundData> {
+		&self.data
+	}
+
 	pub fn default_loop_start(&self) -> Option<f64> {
 		self.default_loop_start
 	}

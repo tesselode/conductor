@@ -38,6 +38,7 @@ pub(crate) struct Instance {
 	volume: CachedValue<f64>,
 	playback_rate: CachedValue<f64>,
 	panning: CachedValue<f64>,
+	reverse: bool,
 	loop_start: Option<f64>,
 }
 
@@ -45,10 +46,11 @@ impl Instance {
 	pub fn new(settings: InternalInstanceSettings) -> Self {
 		Self {
 			state: InstanceState::Playing,
-			playback_position: 0.0,
+			playback_position: settings.start_position,
 			volume: CachedValue::new(settings.volume, 1.0),
 			playback_rate: CachedValue::new(settings.playback_rate, 1.0),
 			panning: CachedValue::new(settings.panning, 0.5).with_valid_range(0.0..1.0),
+			reverse: settings.reverse,
 			loop_start: settings.loop_start,
 		}
 	}
@@ -70,15 +72,29 @@ impl Instance {
 	}
 
 	pub fn update(&mut self, dt: f64, duration: f64, parameters: &Parameters) {
-		self.volume.update(parameters);
-		self.playback_rate.update(parameters);
-		self.panning.update(parameters);
 		if self.state == InstanceState::Playing {
-			self.playback_position += self.playback_rate.value() * dt;
-			if self.playback_position > duration {
+			self.volume.update(parameters);
+			self.playback_rate.update(parameters);
+			self.panning.update(parameters);
+			let mut playback_rate = self.playback_rate.value();
+			if self.reverse {
+				playback_rate *= -1.0;
+			}
+			self.playback_position += playback_rate * dt;
+			if playback_rate < 0.0 {
 				if let Some(loop_start) = self.loop_start {
-					self.playback_position -= duration - loop_start;
-				} else {
+					while self.playback_position < loop_start {
+						self.playback_position += duration - loop_start;
+					}
+				} else if self.playback_position < 0.0 {
+					self.state = InstanceState::Stopped;
+				}
+			} else {
+				if let Some(loop_start) = self.loop_start {
+					while self.playback_position > duration {
+						self.playback_position -= duration - loop_start;
+					}
+				} else if self.playback_position > duration {
 					self.state = InstanceState::Stopped;
 				}
 			}
