@@ -5,7 +5,7 @@ use crate::{
 	static_container::index_map::StaticIndexMap,
 };
 
-use super::{Sound, SoundId};
+use super::{instance::Instance, Sound, SoundId};
 
 pub(crate) struct Sounds {
 	sounds: StaticIndexMap<SoundId, Owned<Sound>>,
@@ -29,10 +29,10 @@ impl Sounds {
 			SoundCommand::AddInstance {
 				sound_id,
 				instance_id,
-				instance,
+				settings,
 			} => {
 				if let Some(sound) = self.sounds.get_mut(&sound_id) {
-					sound.add_instance(instance_id, instance);
+					sound.add_instance(instance_id, settings);
 				}
 			}
 		}

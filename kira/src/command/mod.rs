@@ -5,7 +5,7 @@ use basedrop::Owned;
 use crate::{
 	parameter::{tween::Tween, ParameterId},
 	sound::{
-		instance::{Instance, InstanceId},
+		instance::{settings::InstanceSettings, InstanceId},
 		Sound, SoundId,
 	},
 };
@@ -21,7 +21,7 @@ pub(crate) enum SoundCommand {
 	AddInstance {
 		sound_id: SoundId,
 		instance_id: InstanceId,
-		instance: Instance,
+		settings: InstanceSettings,
 	},
 }
 

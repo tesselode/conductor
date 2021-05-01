@@ -28,12 +28,11 @@ impl SoundHandle {
 
 	pub fn play(&mut self, settings: InstanceSettings) -> Result<InstanceHandle, CommandError> {
 		let instance_id = InstanceId::new();
-		let instance = Instance::new(settings);
 		self.command_producer
 			.push(Command::Sound(SoundCommand::AddInstance {
 				sound_id: self.id,
 				instance_id,
-				instance,
+				settings,
 			}))?;
 		let handle = InstanceHandle::new(instance_id, self.id, self.command_producer.clone());
 		Ok(handle)

@@ -7,7 +7,7 @@ use atomig::Ordering;
 
 use crate::{parameter::parameters::Parameters, value::CachedValue};
 
-use self::{handle::InstanceHandle, settings::InstanceSettings};
+use self::{handle::InstanceHandle, settings::InternalInstanceSettings};
 
 static NEXT_INSTANCE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
@@ -38,16 +38,18 @@ pub(crate) struct Instance {
 	volume: CachedValue<f64>,
 	playback_rate: CachedValue<f64>,
 	panning: CachedValue<f64>,
+	loop_start: Option<f64>,
 }
 
 impl Instance {
-	pub fn new(settings: InstanceSettings) -> Self {
+	pub fn new(settings: InternalInstanceSettings) -> Self {
 		Self {
 			state: InstanceState::Playing,
 			playback_position: 0.0,
 			volume: CachedValue::new(settings.volume, 1.0),
 			playback_rate: CachedValue::new(settings.playback_rate, 1.0),
 			panning: CachedValue::new(settings.panning, 0.5).with_valid_range(0.0..1.0),
+			loop_start: settings.loop_start,
 		}
 	}
 
@@ -74,7 +76,11 @@ impl Instance {
 		if self.state == InstanceState::Playing {
 			self.playback_position += self.playback_rate.value() * dt;
 			if self.playback_position > duration {
-				self.state = InstanceState::Stopped;
+				if let Some(loop_start) = self.loop_start {
+					self.playback_position -= duration - loop_start;
+				} else {
+					self.state = InstanceState::Stopped;
+				}
 			}
 		}
 	}
