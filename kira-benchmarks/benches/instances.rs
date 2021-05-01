@@ -33,8 +33,10 @@ fn instances_benchmark(c: &mut Criterion) {
 		// add a test sound
 		let mut sound_handle = audio_manager
 			.add_sound(
-				create_test_sound(4800000),
-				SoundSettings::new().num_instances(NUM_INSTANCES),
+				create_test_sound(48000),
+				SoundSettings::new()
+					.num_instances(NUM_INSTANCES)
+					.default_loop_start(0.0),
 			)
 			.unwrap();
 		backend.process();
@@ -61,8 +63,10 @@ fn instances_benchmark(c: &mut Criterion) {
 		// add a test sound
 		let mut sound_handle = audio_manager
 			.add_sound(
-				create_test_sound(480000),
-				SoundSettings::new().num_instances(NUM_INSTANCES),
+				create_test_sound(48000),
+				SoundSettings::new()
+					.num_instances(NUM_INSTANCES)
+					.default_loop_start(0.0),
 			)
 			.unwrap();
 		backend.process();
