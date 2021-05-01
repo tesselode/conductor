@@ -1,6 +1,9 @@
 use basedrop::Owned;
 
-use crate::{command::SoundCommand, frame::Frame, static_container::index_map::StaticIndexMap};
+use crate::{
+	command::SoundCommand, frame::Frame, parameter::parameters::Parameters,
+	static_container::index_map::StaticIndexMap,
+};
 
 use super::{Sound, SoundId};
 
@@ -35,11 +38,11 @@ impl Sounds {
 		}
 	}
 
-	pub fn process(&mut self, dt: f64) -> Frame {
+	pub fn process(&mut self, dt: f64, parameters: &Parameters) -> Frame {
 		self.sounds
 			.iter_mut()
 			.fold(Frame::from_mono(0.0), |previous, (_, sound)| {
-				previous + sound.process(dt)
+				previous + sound.process(dt, parameters)
 			})
 	}
 }

@@ -1,10 +1,13 @@
 pub mod handle;
+pub mod settings;
 
 use std::sync::atomic::AtomicUsize;
 
 use atomig::Ordering;
 
-use self::handle::InstanceHandle;
+use crate::{parameter::parameters::Parameters, value::CachedValue};
+
+use self::{handle::InstanceHandle, settings::InstanceSettings};
 
 static NEXT_INSTANCE_INDEX: AtomicUsize = AtomicUsize::new(0);
 
@@ -18,9 +21,9 @@ impl InstanceId {
 }
 
 impl From<&InstanceHandle> for InstanceId {
-    fn from(handle: &InstanceHandle) -> Self {
-        handle.id()
-    }
+	fn from(handle: &InstanceHandle) -> Self {
+		handle.id()
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,13 +35,19 @@ pub enum InstanceState {
 pub(crate) struct Instance {
 	state: InstanceState,
 	playback_position: f64,
+	volume: CachedValue<f64>,
+	playback_rate: CachedValue<f64>,
+	panning: CachedValue<f64>,
 }
 
 impl Instance {
-	pub fn new() -> Self {
+	pub fn new(settings: InstanceSettings) -> Self {
 		Self {
 			state: InstanceState::Playing,
 			playback_position: 0.0,
+			volume: CachedValue::new(settings.volume, 1.0),
+			playback_rate: CachedValue::new(settings.playback_rate, 1.0),
+			panning: CachedValue::new(settings.panning, 0.5).with_valid_range(0.0..1.0),
 		}
 	}
 
@@ -50,9 +59,20 @@ impl Instance {
 		self.playback_position
 	}
 
-	pub fn update(&mut self, dt: f64, duration: f64) {
+	pub fn volume(&self) -> f64 {
+		self.volume.value()
+	}
+
+	pub fn panning(&self) -> f64 {
+		self.panning.value()
+	}
+
+	pub fn update(&mut self, dt: f64, duration: f64, parameters: &Parameters) {
+		self.volume.update(parameters);
+		self.playback_rate.update(parameters);
+		self.panning.update(parameters);
 		if self.state == InstanceState::Playing {
-			self.playback_position += dt;
+			self.playback_position += self.playback_rate.value() * dt;
 			if self.playback_position > duration {
 				self.state = InstanceState::Stopped;
 			}

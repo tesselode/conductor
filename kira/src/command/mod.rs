@@ -2,9 +2,12 @@ pub mod producer;
 
 use basedrop::Owned;
 
-use crate::sound::{
-	instance::{Instance, InstanceId},
-	Sound, SoundId,
+use crate::{
+	parameter::{tween::Tween, ParameterId},
+	sound::{
+		instance::{Instance, InstanceId},
+		Sound, SoundId,
+	},
 };
 
 pub(crate) enum SoundCommand {
@@ -22,6 +25,22 @@ pub(crate) enum SoundCommand {
 	},
 }
 
+pub(crate) enum ParameterCommand {
+	AddParameter {
+		id: ParameterId,
+		starting_value: f64,
+	},
+	RemoveParameter {
+		id: ParameterId,
+	},
+	SetParameter {
+		id: ParameterId,
+		value: f64,
+		tween: Option<Tween>,
+	},
+}
+
 pub(crate) enum Command {
 	Sound(SoundCommand),
+	Parameter(ParameterCommand),
 }

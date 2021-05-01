@@ -15,14 +15,10 @@ use ringbuf::RingBuffer;
 use crate::{
 	command::{
 		producer::{CommandError, CommandProducer},
-		Command, SoundCommand,
+		Command, ParameterCommand, SoundCommand,
 	},
-	sound::{
-		data::SoundData,
-		handle::SoundHandle,
-		instance::{Instance, InstanceId},
-		Sound, SoundId, SoundSettings,
-	},
+	parameter::{handle::ParameterHandle, Parameter, ParameterId},
+	sound::{data::SoundData, handle::SoundHandle, Sound, SoundId, SoundSettings},
 };
 
 use self::{backend::Backend, ctx::AudioContext, error::SetupError};
@@ -30,6 +26,7 @@ use self::{backend::Backend, ctx::AudioContext, error::SetupError};
 pub struct AudioManagerSettings {
 	pub num_commands: usize,
 	pub num_sounds: usize,
+	pub num_parameters: usize,
 }
 
 impl Default for AudioManagerSettings {
@@ -37,6 +34,7 @@ impl Default for AudioManagerSettings {
 		Self {
 			num_commands: 100,
 			num_sounds: 100,
+			num_parameters: 25,
 		}
 	}
 }
@@ -103,6 +101,24 @@ impl AudioManager {
 	pub fn remove_sound(&mut self, id: impl Into<SoundId>) -> Result<(), CommandError> {
 		self.command_producer
 			.push(Command::Sound(SoundCommand::RemoveSound { id: id.into() }))
+	}
+
+	pub fn add_parameter(&mut self, starting_value: f64) -> Result<ParameterHandle, CommandError> {
+		let id = ParameterId::new();
+		self.command_producer
+			.push(Command::Parameter(ParameterCommand::AddParameter {
+				id,
+				starting_value,
+			}))?;
+		let handle = ParameterHandle::new(id, self.command_producer.clone());
+		Ok(handle)
+	}
+
+	pub fn remove_parameter(&mut self, id: impl Into<ParameterId>) -> Result<(), CommandError> {
+		self.command_producer
+			.push(Command::Parameter(ParameterCommand::RemoveParameter {
+				id: id.into(),
+			}))
 	}
 
 	pub fn free_unused_resources(&mut self) {

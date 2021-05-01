@@ -4,7 +4,7 @@ use crate::command::{
 };
 
 use super::{
-	instance::{handle::InstanceHandle, Instance, InstanceId},
+	instance::{handle::InstanceHandle, settings::InstanceSettings, Instance, InstanceId},
 	SoundId,
 };
 
@@ -26,9 +26,9 @@ impl SoundHandle {
 		self.id
 	}
 
-	pub fn play(&mut self) -> Result<InstanceHandle, CommandError> {
+	pub fn play(&mut self, settings: InstanceSettings) -> Result<InstanceHandle, CommandError> {
 		let instance_id = InstanceId::new();
-		let instance = Instance::new();
+		let instance = Instance::new(settings);
 		self.command_producer
 			.push(Command::Sound(SoundCommand::AddInstance {
 				sound_id: self.id,

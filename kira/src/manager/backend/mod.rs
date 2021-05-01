@@ -3,7 +3,9 @@ use std::sync::Arc;
 use atomig::Ordering;
 use ringbuf::Consumer;
 
-use crate::{command::Command, frame::Frame, sound::sounds::Sounds};
+use crate::{
+	command::Command, frame::Frame, parameter::parameters::Parameters, sound::sounds::Sounds,
+};
 
 use super::{ctx::AudioContext, AudioManagerSettings};
 
@@ -12,6 +14,7 @@ pub(crate) struct Backend {
 	dt: f64,
 	command_consumer: Consumer<Command>,
 	sounds: Sounds,
+	parameters: Parameters,
 }
 
 impl Backend {
@@ -26,6 +29,7 @@ impl Backend {
 			dt,
 			command_consumer,
 			sounds: Sounds::new(settings.num_sounds),
+			parameters: Parameters::new(settings.num_parameters),
 		}
 	}
 
@@ -35,8 +39,12 @@ impl Backend {
 				Command::Sound(command) => {
 					self.sounds.run_command(command);
 				}
+				Command::Parameter(command) => {
+					self.parameters.run_command(command);
+				}
 			}
 		}
-		self.sounds.process(self.dt)
+		self.parameters.update(self.dt);
+		self.sounds.process(self.dt, &self.parameters)
 	}
 }
