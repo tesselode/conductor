@@ -9,7 +9,7 @@ use crate::{
 
 use super::{ctx::AudioContext, AudioManagerSettings};
 
-pub(crate) struct Backend {
+pub struct Backend {
 	ctx: Arc<AudioContext>,
 	dt: f64,
 	command_consumer: Consumer<Command>,
@@ -18,7 +18,7 @@ pub(crate) struct Backend {
 }
 
 impl Backend {
-	pub fn new(
+	pub(crate) fn new(
 		ctx: Arc<AudioContext>,
 		command_consumer: Consumer<Command>,
 		settings: AudioManagerSettings,

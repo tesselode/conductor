@@ -17,11 +17,16 @@ use crate::{
 		producer::{CommandError, CommandProducer},
 		Command, ParameterCommand, SoundCommand,
 	},
-	parameter::{handle::ParameterHandle, Parameter, ParameterId},
+	parameter::{handle::ParameterHandle, ParameterId},
 	sound::{data::SoundData, handle::SoundHandle, Sound, SoundId, SoundSettings},
 };
 
-use self::{backend::Backend, ctx::AudioContext, error::SetupError};
+use self::{ctx::AudioContext, error::SetupError};
+
+#[cfg(feature = "benchmarking")]
+pub use self::backend::Backend;
+#[cfg(not(feature = "benchmarking"))]
+use self::backend::Backend;
 
 pub struct AudioManagerSettings {
 	pub num_commands: usize,
@@ -43,7 +48,7 @@ pub struct AudioManager {
 	ctx: Arc<AudioContext>,
 	command_producer: CommandProducer,
 	collector: Collector,
-	_stream: Stream,
+	_stream: Option<Stream>,
 }
 
 impl AudioManager {
@@ -78,8 +83,23 @@ impl AudioManager {
 			ctx,
 			command_producer: CommandProducer::new(command_producer),
 			collector: Collector::new(),
-			_stream: stream,
+			_stream: Some(stream),
 		})
+	}
+
+	#[cfg(feature = "benchmarking")]
+	pub fn new_without_audio_thread(settings: AudioManagerSettings) -> (Self, Backend) {
+		let (command_producer, command_consumer) = RingBuffer::new(settings.num_commands).split();
+		let sample_rate = 48000;
+		let ctx = Arc::new(AudioContext::new(sample_rate));
+		let backend = Backend::new(ctx.clone(), command_consumer, settings);
+		let manager = Self {
+			ctx,
+			command_producer: CommandProducer::new(command_producer),
+			collector: Collector::new(),
+			_stream: None,
+		};
+		(manager, backend)
 	}
 
 	pub fn add_sound(
