@@ -35,7 +35,7 @@ impl Backend {
 		}
 	}
 
-	pub fn receive_resources(&mut self) {
+	pub fn before_process(&mut self) {
 		while let Some(sound) = self.new_resource_consumers.sound_consumer.pop() {
 			if self.sounds.len() < self.sounds.capacity() {
 				self.sounds.push(sound);
@@ -50,9 +50,16 @@ impl Backend {
 		while let Some(instance) = self.new_resource_consumers.instance_consumer.pop() {
 			self.instances.push(instance);
 		}
+
+		self.instances.update_from_controllers();
 	}
 
 	pub fn process(&mut self) -> Frame {
-		self.instances.process(self.dt)
+		self.instances
+			.process(self.dt, &mut self.unused_resource_producers)
+	}
+
+	pub fn after_process(&mut self) {
+		self.instances.save_state_to_controllers();
 	}
 }

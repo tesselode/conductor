@@ -11,7 +11,12 @@ use cpal::{
 
 use crate::{
 	manager::{backend::Backend, error::SetupError},
-	sound::{data::SoundData, handle::SoundHandle, instance::Instance, Sound},
+	sound::{
+		data::SoundData,
+		handle::SoundHandle,
+		instance::{handle::InstanceHandle, Instance, InstanceController},
+		Sound,
+	},
 };
 
 use self::{
@@ -65,9 +70,9 @@ impl AudioManager {
 			&config,
 			move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
 				#[cfg(feature = "assert_no_alloc")]
-				assert_no_alloc::assert_no_alloc(|| backend.receive_resources());
+				assert_no_alloc::assert_no_alloc(|| backend.before_process());
 				#[cfg(not(feature = "assert_no_alloc"))]
-				backend.receive_resources();
+				backend.before_process();
 				for frame in data.chunks_exact_mut(channels as usize) {
 					#[cfg(feature = "assert_no_alloc")]
 					let out = assert_no_alloc::assert_no_alloc(|| backend.process());
@@ -80,6 +85,10 @@ impl AudioManager {
 						frame[1] = out.right;
 					}
 				}
+				#[cfg(feature = "assert_no_alloc")]
+				assert_no_alloc::assert_no_alloc(|| backend.after_process());
+				#[cfg(not(feature = "assert_no_alloc"))]
+				backend.after_process();
 			},
 			move |_| {},
 		)?;
@@ -104,11 +113,14 @@ impl AudioManager {
 		Ok(handle)
 	}
 
-	pub fn play(&mut self, sound: &SoundHandle) -> Result<(), PlaySoundError> {
+	pub fn play(&mut self, sound: &SoundHandle) -> Result<InstanceHandle, PlaySoundError> {
 		let data = sound.data().clone();
+		let controller = Arc::new(InstanceController::new());
+		let handle = InstanceHandle::new(controller.clone());
 		self.new_resource_producers
 			.instance_producer
-			.push(Instance::new(data))
-			.map_err(|_| PlaySoundError::InstanceLimitReached)
+			.push(Instance::new(data, controller.clone()))
+			.map_err(|_| PlaySoundError::InstanceLimitReached)?;
+		Ok(handle)
 	}
 }

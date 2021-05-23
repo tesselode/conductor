@@ -33,18 +33,27 @@ pub(crate) fn create_new_resource_channels(
 
 pub(crate) struct UnusedResourceProducers {
 	pub sound_producer: Producer<Sound>,
+	pub instance_producer: Producer<Instance>,
 }
 
 pub(crate) struct UnusedResourceConsumers {
 	pub sound_consumer: Consumer<Sound>,
+	pub instance_consumer: Consumer<Instance>,
 }
 
 pub(crate) fn create_unused_resource_channels(
 	settings: &AudioManagerSettings,
 ) -> (UnusedResourceProducers, UnusedResourceConsumers) {
 	let (sound_producer, sound_consumer) = RingBuffer::new(settings.num_sounds).split();
+	let (instance_producer, instance_consumer) = RingBuffer::new(settings.num_instances).split();
 	(
-		UnusedResourceProducers { sound_producer },
-		UnusedResourceConsumers { sound_consumer },
+		UnusedResourceProducers {
+			sound_producer,
+			instance_producer,
+		},
+		UnusedResourceConsumers {
+			sound_consumer,
+			instance_consumer,
+		},
 	)
 }

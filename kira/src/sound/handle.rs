@@ -8,7 +8,7 @@ pub struct SoundHandle {
 }
 
 impl SoundHandle {
-	pub fn new(data: Arc<dyn SoundData>) -> Self {
+	pub(crate) fn new(data: Arc<dyn SoundData>) -> Self {
 		Self { data }
 	}
 
