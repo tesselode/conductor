@@ -28,3 +28,11 @@ pub enum AddSoundError {
 	#[error("Cannot add a sound because the max number of sounds has been reached")]
 	SoundLimitReached,
 }
+
+/// Things that can go wrong when playing a sound.
+#[derive(Debug, Error)]
+pub enum PlaySoundError {
+	/// The maximum sound limit has been reached.
+	#[error("Cannot play the sound because the max number of instances has been reached")]
+	InstanceLimitReached,
+}

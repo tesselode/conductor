@@ -1,24 +1,29 @@
+mod instances;
+
 use crate::{frame::Frame, sound::Sound};
 
+use self::instances::Instances;
+
 use super::{
-	resource_channel::{ResourceConsumers, ResourceProducers},
+	resource_channel::{NewResourceConsumers, UnusedResourceProducers},
 	AudioManagerSettings,
 };
 
-pub struct Backend {
+pub(crate) struct Backend {
 	sample_rate: u32,
 	dt: f64,
-	new_resource_consumers: ResourceConsumers,
-	unused_resource_producers: ResourceProducers,
+	new_resource_consumers: NewResourceConsumers,
+	unused_resource_producers: UnusedResourceProducers,
 	sounds: Vec<Sound>,
+	instances: Instances,
 }
 
 impl Backend {
 	pub fn new(
 		settings: AudioManagerSettings,
 		sample_rate: u32,
-		new_resource_consumers: ResourceConsumers,
-		unused_resource_producers: ResourceProducers,
+		new_resource_consumers: NewResourceConsumers,
+		unused_resource_producers: UnusedResourceProducers,
 	) -> Self {
 		Self {
 			sample_rate,
@@ -26,6 +31,7 @@ impl Backend {
 			new_resource_consumers,
 			unused_resource_producers,
 			sounds: Vec::with_capacity(settings.num_sounds),
+			instances: Instances::new(settings.num_instances),
 		}
 	}
 
@@ -40,9 +46,13 @@ impl Backend {
 					.ok();
 			}
 		}
+
+		while let Some(instance) = self.new_resource_consumers.instance_consumer.pop() {
+			self.instances.push(instance);
+		}
 	}
 
 	pub fn process(&mut self) -> Frame {
-		Frame::from_mono(0.0)
+		self.instances.process(self.dt)
 	}
 }

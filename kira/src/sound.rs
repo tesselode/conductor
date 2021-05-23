@@ -1,13 +1,17 @@
+pub mod data;
+pub mod handle;
+pub mod instance;
+
+use std::sync::Arc;
+
 use self::data::SoundData;
 
-pub mod data;
-
-pub struct Sound {
-	data: Box<dyn SoundData>,
+pub(crate) struct Sound {
+	data: Arc<dyn SoundData>,
 }
 
 impl Sound {
-	pub fn new(data: Box<dyn SoundData>) -> Self {
+	pub fn new(data: Arc<dyn SoundData>) -> Self {
 		Self { data }
 	}
 }

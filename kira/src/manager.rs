@@ -2,6 +2,8 @@ mod backend;
 mod error;
 mod resource_channel;
 
+use std::sync::Arc;
+
 use cpal::{
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 	Stream,
@@ -9,35 +11,43 @@ use cpal::{
 
 use crate::{
 	manager::{backend::Backend, error::SetupError},
-	sound::{data::SoundData, Sound},
+	sound::{data::SoundData, handle::SoundHandle, instance::Instance, Sound},
 };
 
 use self::{
-	error::AddSoundError,
-	resource_channel::{create_resource_channels, ResourceConsumers, ResourceProducers},
+	error::{AddSoundError, PlaySoundError},
+	resource_channel::{
+		create_new_resource_channels, create_unused_resource_channels, NewResourceProducers,
+		UnusedResourceConsumers,
+	},
 };
 
 pub struct AudioManagerSettings {
 	num_sounds: usize,
+	num_instances: usize,
 }
 
 impl Default for AudioManagerSettings {
 	fn default() -> Self {
-		Self { num_sounds: 100 }
+		Self {
+			num_sounds: 100,
+			num_instances: 100,
+		}
 	}
 }
 
 pub struct AudioManager {
 	_stream: Stream,
-	new_resource_producers: ResourceProducers,
-	unused_resource_consumers: ResourceConsumers,
+	new_resource_producers: NewResourceProducers,
+	unused_resource_consumers: UnusedResourceConsumers,
 }
 
 impl AudioManager {
 	pub fn new(settings: AudioManagerSettings) -> Result<Self, SetupError> {
-		let (new_resource_producers, new_resource_consumers) = create_resource_channels(&settings);
+		let (new_resource_producers, new_resource_consumers) =
+			create_new_resource_channels(&settings);
 		let (unused_resource_producers, unused_resource_consumers) =
-			create_resource_channels(&settings);
+			create_unused_resource_channels(&settings);
 		let host = cpal::default_host();
 		let device = host
 			.default_output_device()
@@ -81,10 +91,24 @@ impl AudioManager {
 		})
 	}
 
-	pub fn add_sound(&mut self, data: impl SoundData + 'static) -> Result<(), AddSoundError> {
+	pub fn add_sound(
+		&mut self,
+		data: impl SoundData + 'static,
+	) -> Result<SoundHandle, AddSoundError> {
+		let data = Arc::new(data);
+		let handle = SoundHandle::new(data.clone());
 		self.new_resource_producers
 			.sound_producer
-			.push(Sound::new(Box::new(data)))
-			.map_err(|_| AddSoundError::SoundLimitReached)
+			.push(Sound::new(data.clone()))
+			.map_err(|_| AddSoundError::SoundLimitReached)?;
+		Ok(handle)
+	}
+
+	pub fn play(&mut self, sound: &SoundHandle) -> Result<(), PlaySoundError> {
+		let data = sound.data().clone();
+		self.new_resource_producers
+			.instance_producer
+			.push(Instance::new(data))
+			.map_err(|_| PlaySoundError::InstanceLimitReached)
 	}
 }
