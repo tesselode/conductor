@@ -6,14 +6,16 @@ use cpal::{
 	traits::{DeviceTrait, HostTrait, StreamTrait},
 	Stream,
 };
-use llq::Node;
 
 use crate::{
 	manager::{backend::Backend, error::SetupError},
 	sound::{data::SoundData, Sound},
 };
 
-use self::resource_channel::{create_resource_channels, ResourceConsumers, ResourceProducers};
+use self::{
+	error::AddSoundError,
+	resource_channel::{create_resource_channels, ResourceConsumers, ResourceProducers},
+};
 
 pub struct AudioManagerSettings {
 	num_sounds: usize,
@@ -33,8 +35,9 @@ pub struct AudioManager {
 
 impl AudioManager {
 	pub fn new(settings: AudioManagerSettings) -> Result<Self, SetupError> {
-		let (new_resource_producers, new_resource_consumers) = create_resource_channels();
-		let (unused_resource_producers, unused_resource_consumers) = create_resource_channels();
+		let (new_resource_producers, new_resource_consumers) = create_resource_channels(&settings);
+		let (unused_resource_producers, unused_resource_consumers) =
+			create_resource_channels(&settings);
 		let host = cpal::default_host();
 		let device = host
 			.default_output_device()
@@ -78,9 +81,10 @@ impl AudioManager {
 		})
 	}
 
-	pub fn add_sound(&mut self, data: impl SoundData + 'static) {
+	pub fn add_sound(&mut self, data: impl SoundData + 'static) -> Result<(), AddSoundError> {
 		self.new_resource_producers
 			.sound_producer
-			.push(Node::new(Sound::new(Box::new(data))));
+			.push(Sound::new(Box::new(data)))
+			.map_err(|_| AddSoundError::SoundLimitReached)
 	}
 }

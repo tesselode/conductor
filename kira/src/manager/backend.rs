@@ -1,5 +1,3 @@
-use llq::Node;
-
 use crate::{frame::Frame, sound::Sound};
 
 use super::{
@@ -12,7 +10,7 @@ pub struct Backend {
 	dt: f64,
 	new_resource_consumers: ResourceConsumers,
 	unused_resource_producers: ResourceProducers,
-	sounds: Vec<Node<Sound>>,
+	sounds: Vec<Sound>,
 }
 
 impl Backend {
@@ -36,7 +34,10 @@ impl Backend {
 			if self.sounds.len() < self.sounds.capacity() {
 				self.sounds.push(sound);
 			} else {
-				self.unused_resource_producers.sound_producer.push(sound);
+				self.unused_resource_producers
+					.sound_producer
+					.push(sound)
+					.ok();
 			}
 		}
 	}

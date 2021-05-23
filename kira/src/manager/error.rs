@@ -20,3 +20,11 @@ pub enum SetupError {
 	#[error("{0}")]
 	PlayStreamError(#[from] PlayStreamError),
 }
+
+/// Things that can go wrong when adding a sound to the audio thread.
+#[derive(Debug, Error)]
+pub enum AddSoundError {
+	/// The maximum sound limit has been reached.
+	#[error("Cannot add a sound because the max number of sounds has been reached")]
+	SoundLimitReached,
+}
